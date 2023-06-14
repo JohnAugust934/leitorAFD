@@ -1,0 +1,302 @@
+/*FONTE*/
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+/*PADRÕES*/
+*,
+table,
+table th,
+table td,
+h1,
+h2,
+a,
+span,
+.alert-box {
+    font-family: 'Montserrat', sans-serif;
+    text-decoration: none;
+}
+
+/*CORPO DO SITE*/
+body {
+    background-image: linear-gradient(135deg, #FFF886 10%, #F072B6 100%);
+    padding: 0 2%;
+    min-height: 100vh;
+}
+
+/*TITULO*/
+h1 {
+    font-weight: 700;
+    font-size: 2em;
+    text-align: center;
+    margin: 1%;
+}
+
+span,
+a:nth-child(1) {
+    display: flex;
+    justify-content: center;
+    font-style: italic;
+    font-size: 18px;
+}
+
+/*TOPO DO SITE*/
+.topo {
+    display: flex;
+    justify-content: space-between;
+    margin: 2% 0;
+}
+
+/*ESCOLHER ARQUIVO*/
+
+.topo h2 {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.escolherArquivo {
+    padding: 10px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    background-image: linear-gradient(135deg, #FEC163 10%, #DE4313 100%);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.escolherArquivo:hover {
+    background-image: linear-gradient(135deg, #FEC163 0%, #DE4313 100%);
+}
+
+#removeButton,
+#clearButton {
+    padding: 10px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    background-image: linear-gradient(135deg, #FEC163 10%, #DE4313 100%);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#removeButton:hover,
+#clearButton:hover {
+    background-image: linear-gradient(135deg, #FEC163 0%, #DE4313 100%);
+}
+
+/*TABELA*/
+#logoutButton {
+    padding: 10px 15px;
+    font-size: 14px;
+    border: none;
+    border-radius: 5px;
+    background-image: linear-gradient(135deg, #FEC163 10%, #DE4313 100%);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* TABELA */
+#fileTable {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    /* Adicionado para ajustar a largura das colunas */
+}
+
+#fileTable th {
+    padding: 10px;
+    font-weight: bold;
+    text-align: left;
+    white-space: nowrap;
+    /* Impede a quebra de texto em tamanhos menores de tela */
+    overflow: hidden;
+    /* Impede o conteúdo de transbordar */
+    text-overflow: ellipsis;
+    /* Mostra "..." quando o texto transborda */
+}
+
+#fileTable td {
+    padding: 8px;
+    border: 1px solid black;
+    white-space: nowrap;
+    /* Impede a quebra de texto em tamanhos menores de tela */
+    overflow: hidden;
+    /* Impede o conteúdo de transbordar */
+    text-overflow: ellipsis;
+    /* Mostra "..." quando o texto transborda */
+}
+
+#fileTable input[type="text"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 5px;
+    width: 100%;
+    /* Alterado para ocupar 100% da largura disponível */
+}
+
+#fileTable .search-button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    background-image: linear-gradient(135deg, #FEC163 10%, #DE4313 100%);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#fileTable .search-button:hover {
+    background-image: linear-gradient(135deg, #FEC163 0%, #DE4313 100%);
+}
+
+#fileTable div {
+    display: flex;
+    flex-wrap: wrap;
+    /* Adicionado para quebrar em várias linhas em tamanhos menores de tela */
+}
+
+table th,
+table td {
+    padding: 8px;
+    border: 1px solid black;
+}
+
+
+/*DEIXAR A PESQUISA GRIFADA*/
+.highlight {
+    background-color: rgb(255, 255, 0);
+    font-weight: bold;
+}
+
+.highlight-row {
+    background-color: #f5f5f5;
+    /* Cor de fundo cinza claro */
+}
+
+/*BARRA DE ROLAGEM DA PAGINA*/
+body::-webkit-scrollbar {
+    width: 10px;
+    /* Largura da barra de rolagem */
+    background-color: transparent;
+    /* Cor de fundo da barra de rolagem */
+}
+
+body::-webkit-scrollbar-thumb {
+    background-image: linear-gradient(135deg, #FEC163 10%, #DE4313 100%);
+    /* Gradiente da barra de rolagem */
+    border-radius: 5px;
+    /* Raio da borda da barra de rolagem */
+}
+
+body::-webkit-scrollbar-thumb:hover {
+    background-image: linear-gradient(135deg, #FEC163 0%, #DE4313 100%);
+    /* Gradiente da barra de rolagem ao passar o mouse */
+}
+
+body::-webkit-scrollbar-track {
+    background-color: transparent;
+    /* Cor de fundo da área da barra de rolagem */
+}
+
+body::-webkit-scrollbar-track:hover {
+    background-color: transparent;
+    /* Cor de fundo da área da barra de rolagem ao passar o mouse */
+}
+
+/* Estilos para o alerta personalizado */
+.alert-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+}
+
+.alert-box {
+    background-color: #ffffff;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    text-align: center;
+}
+
+.alert-message {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.alert-close {
+    cursor: pointer;
+    color: #888888;
+    font-size: 14px;
+    font-weight: bold;
+    align-self: flex-end;
+}
+
+/* MEDIA QUERIES */
+
+/* Tablets e dispositivos móveis */
+@media (max-width: 768px) {
+    .topo {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .topo h2 {
+        margin-bottom: 10px;
+    }
+
+    .escolherArquivo,
+    #removeButton,
+    #clearButton {
+        width: 100%;
+    }
+
+    #fileTable th,
+    #fileTable td {
+        white-space: normal;
+        /* Permite que o texto seja quebrado */
+        overflow: visible;
+        /* Permite que o conteúdo seja visível quando quebrado */
+        text-overflow: clip;
+        /* Mostra o conteúdo completo quando quebrado */
+    }
+
+    #fileTable input[type="text"],
+    #fileTable .search-button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+/* Smartphones */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5em;
+    }
+
+    span,
+    a:nth-child(1) {
+        font-size: 14px;
+    }
+
+    #fileTable input[type="text"],
+    #fileTable .search-button {
+        width: 100%;
+        margin-bottom: 10px;
+        font-size: 12px;
+    }
+
+    #fileTable th,
+    table td {
+        padding: 5px;
+    }
+}
