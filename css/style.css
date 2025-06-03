@@ -129,35 +129,21 @@ span.design-by {
   font-style: italic;
   font-size: 0.85em;
   color: var(--secondary-text-color);
-  margin-bottom: 25px;
+  margin-bottom: 5px;
 }
 span.design-by a {
   color: var(--link-color);
   font-weight: 500;
 }
 
-/* ESTILO DA VERSÃO */
 .app-version {
-  display: block; /* Para ocupar sua própria linha abaixo do "design by" */
-  text-align: left; /* Alinha com o título e "design by" */
+  display: block;
+  text-align: left;
   font-size: 0.75em;
   color: var(--secondary-text-color);
-  margin-top: 2px; /* Pequeno espaço acima */
-  margin-bottom: 20px; /* Espaço antes do próximo conteúdo */
+  margin-top: 2px;
+  margin-bottom: 20px;
   font-style: italic;
-}
-
-/* Ajuste no span.design-by para remover margem inferior se a versão vier logo abaixo */
-span.design-by {
-  /* margin-bottom: 25px; /* Removido ou reduzido */
-  margin-bottom: 5px; /* Reduzido para ficar mais próximo da versão */
-}
-
-/* Ajuste no header-title-wrapper se necessário para o alinhamento */
-.header-title-wrapper {
-  flex-grow: 1;
-  /* Adicione padding-right se o botão de tema estiver muito próximo */
-  /* padding-right: 20px;  */
 }
 
 /* BOTÃO DE TEMA */
@@ -309,7 +295,6 @@ a#downloadButton:hover {
 
 /* CONTROLES DE BUSCA NA TABELA */
 #fileTable th div {
-  /* Wrapper para input e botão de busca */
   display: flex;
   align-items: center;
   margin-top: 8px;
@@ -351,16 +336,68 @@ a#downloadButton:hover {
   background-color: var(--accent-hover-color);
 }
 
+/* SEÇÃO DE RESUMO DO ARQUIVO */
+.file-summary-section {
+  width: 100%;
+  background-color: var(--surface-bg-color);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 20px;
+}
+.file-summary-section h2 {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--primary-text-color);
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+.file-summary-content {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(250px, 1fr)
+  ); /* Layout responsivo em colunas */
+  gap: 15px;
+  font-size: 0.9em;
+}
+.file-summary-content p {
+  margin-bottom: 8px;
+}
+.file-summary-content strong {
+  font-weight: 600;
+  color: var(--accent-color);
+}
+.file-summary-content ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+.file-summary-content li {
+  margin-bottom: 5px;
+}
+
+/* ESTILOS PARA RESUMO DE PIS */
+.file-summary-content .summary-valid {
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+.file-summary-content .summary-invalid {
+  color: var(--danger-color);
+  font-weight: bold;
+}
+
 /* TABELA */
 #fileTable {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 0; /* Removido margin-top pois o resumo agora está acima */
   background-color: var(--surface-bg-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  table-layout: fixed; /* Importante para larguras de coluna funcionarem bem */
+  table-layout: fixed;
 }
 
 #fileTable th,
@@ -368,41 +405,39 @@ a#downloadButton:hover {
   padding: 10px 8px;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
-  white-space: normal; /* PERMITE QUEBRA DE LINHA */
-  word-break: break-word; /* Quebra palavras longas */
+  white-space: normal;
+  word-break: break-word;
   font-size: 0.85em;
 }
 
-/* Definindo larguras para as colunas para melhor distribuição */
-/* Ajustadas para a ausência do campo de busca na coluna CRC */
 #fileTable th:nth-child(1),
 #fileTable td:nth-child(1) {
   width: 6%;
-} /* Linhas */
+}
 #fileTable th:nth-child(2),
 #fileTable td:nth-child(2) {
   width: 18%;
-} /* NSR */
+}
 #fileTable th:nth-child(3),
 #fileTable td:nth-child(3) {
   width: 13%;
-} /* Código */
+}
 #fileTable th:nth-child(4),
 #fileTable td:nth-child(4) {
   width: 17%;
-} /* Data */
+}
 #fileTable th:nth-child(5),
 #fileTable td:nth-child(5) {
   width: 12%;
-} /* Hora */
+}
 #fileTable th:nth-child(6),
 #fileTable td:nth-child(6) {
   width: 24%;
-} /* PIS */
+}
 #fileTable th:nth-child(7),
 #fileTable td:nth-child(7) {
   width: 10%;
-} /* CRC - sem campo de busca, pode ser menor */
+}
 
 #fileTable th {
   background-color: var(--bg-color);
@@ -436,6 +471,57 @@ a#downloadButton:hover {
     --accent-color-transparent,
     rgba(88, 166, 255, 0.1)
   ) !important;
+}
+
+/* CONTROLES DE PAGINAÇÃO */
+.pagination-controls {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  margin-top: 20px;
+  gap: 10px;
+  background-color: var(--surface-bg-color);
+  border-radius: 8px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1); /* Sombra sutil no topo */
+}
+.pagination-controls button,
+.pagination-controls select {
+  padding: 8px 12px;
+  font-size: 0.9em;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background-color: var(--bg-color);
+  color: var(--primary-text-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  margin: 0; /* Remove margem padrão de botão */
+}
+.pagination-controls button:hover,
+.pagination-controls select:hover {
+  background-color: var(--border-color);
+}
+.pagination-controls button:disabled {
+  background-color: var(--secondary-text-color);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pagination-controls select {
+  min-width: 70px;
+  appearance: none; /* Para customizar o select */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cdd9e5'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E"); /* Seta para tema escuro */
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 1.2em;
+  padding-right: 30px; /* Espaço para a seta */
+}
+body.theme-light .pagination-controls select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2324292f'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E"); /* Seta para tema claro */
+}
+.pagination-controls span {
+  font-size: 0.9em;
+  color: var(--secondary-text-color);
 }
 
 /* BARRA DE ROLAGEM */
@@ -528,35 +614,34 @@ body::-webkit-scrollbar-thumb:hover {
   color: white;
   border: none;
   border-radius: 50%;
-  font-size: 1.5em; /* Tamanho do ícone/texto */
-  display: flex; /* Para centralizar o ícone */
+  font-size: 1.5em;
+  display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.3s ease;
-  z-index: 1000; /* Para ficar sobre outros elementos */
-  opacity: 0; /* Começa invisível, JS controla via display e opacity */
+  transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.3s ease,
+    visibility 0.3s ease;
+  z-index: 1000;
+  opacity: 0;
   visibility: hidden;
+  transform: scale(0.8); /* Começa um pouco menor */
 }
-
 .scroll-button.visible {
   opacity: 1;
   visibility: visible;
   transform: scale(1);
 }
-
 .scroll-button:hover {
   background-color: var(--accent-hover-color);
-  transform: scale(1.1); /* Efeito de zoom no hover */
+  transform: scale(1.1);
 }
-
 .scroll-button:active {
   transform: scale(0.95);
 }
 
 @media (min-width: 1600px) {
   .container {
-    max-width: 1500px; /* Um pouco mais largo para telas grandes */
+    max-width: 1500px;
   }
 }
