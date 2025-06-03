@@ -1,4 +1,4 @@
-#  lectoresAFD PWA  AFD PWA
+#  leitorAFD - PWA
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge" alt="Versão do Projeto">
@@ -46,7 +46,7 @@ A aplicação foi projetada com foco na experiência de desktop, oferecendo uma 
 2.  **Obtenha os arquivos:**
     * Clone este repositório:
         ```bash
-        git clone [https://github.com/JohnAugust934/leitorAFD.git](https://github.com/JohnAugust934/leitorAFD.git)
+        git clone https://github.com/JohnAugust934/leitorAFD.git
         ```
     * Navegue até a pasta do projeto:
         ```bash
