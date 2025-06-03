@@ -29,7 +29,7 @@
                 <h1>Leitor AFD</h1>
                 <span class="design-by">Design by: <a href="http://johnaugust934.com.br" target="_blank"
                         rel="noopener noreferrer">João Augusto</a></span>
-                <span class="app-version">v2.0.0 - PWA Edition</span>
+                <span class="app-version">v2.1.4 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
             </div>
             <button id="themeSwitcherButton" class="theme-switcher" title="Alternar Tema">🌙</button>
         </header>
@@ -50,6 +50,13 @@
                 <h2>Arquivo para teste:</h2>
                 <a id="downloadButton" href="AFD00004004330144881.txt" download="AFD_Teste.txt">Download Arquivo
                     Teste</a>
+            </div>
+        </div>
+
+        <div id="fileSummarySection" class="file-summary-section" style="display: none;">
+            <h2>Resumo do Arquivo AFD</h2>
+            <div id="fileSummaryContent" class="file-summary-content">
+                <!-- O conteúdo do resumo será inserido aqui pelo JavaScript -->
             </div>
         </div>
 
@@ -99,9 +106,27 @@
                 </tr>
             </thead>
             <tbody>
+                <!-- Os dados da tabela serão adicionados dinamicamente -->
             </tbody>
         </table>
-    </div> <button id="scrollTopBottomButton" class="scroll-button" title="Descer até o final"
+
+        <div id="paginationControls" class="pagination-controls" style="display: none;">
+            <button id="prevPageButton" title="Página Anterior">Anterior</button>
+            <span id="pageInfo">Página X de Y</span>
+            <button id="nextPageButton" title="Próxima Página">Próxima</button>
+            <select id="rowsPerPageSelect" title="Registros por página">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="all">Todos</option> <!-- NOVA OPÇÃO "TODOS" -->
+            </select>
+            <span id="totalRowsInfo"></span>
+        </div>
+
+    </div> <!-- Fim do .container -->
+
+    <button id="scrollTopBottomButton" class="scroll-button" title="Descer até o final"
         style="display: none;">⬇️</button>
 
     <script src="js/app.js" defer></script>
