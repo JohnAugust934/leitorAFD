@@ -136,6 +136,30 @@ span.design-by a {
   font-weight: 500;
 }
 
+/* ESTILO DA VERSÃO */
+.app-version {
+  display: block; /* Para ocupar sua própria linha abaixo do "design by" */
+  text-align: left; /* Alinha com o título e "design by" */
+  font-size: 0.75em;
+  color: var(--secondary-text-color);
+  margin-top: 2px; /* Pequeno espaço acima */
+  margin-bottom: 20px; /* Espaço antes do próximo conteúdo */
+  font-style: italic;
+}
+
+/* Ajuste no span.design-by para remover margem inferior se a versão vier logo abaixo */
+span.design-by {
+  /* margin-bottom: 25px; /* Removido ou reduzido */
+  margin-bottom: 5px; /* Reduzido para ficar mais próximo da versão */
+}
+
+/* Ajuste no header-title-wrapper se necessário para o alinhamento */
+.header-title-wrapper {
+  flex-grow: 1;
+  /* Adicione padding-right se o botão de tema estiver muito próximo */
+  /* padding-right: 20px;  */
+}
+
 /* BOTÃO DE TEMA */
 .theme-switcher {
   padding: 8px 12px;
