@@ -1,0 +1,38 @@
+{
+    "name": "Leitor AFD PWA",
+    "short_name": "LeitorAFD",
+    "description": "Um leitor de arquivos AFD que funciona offline como PWA.",
+    "lang": "pt-BR",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#22272e",
+    "theme_color": "#2c3e50",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "icons/android-chrome-192x192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "icons/android-chrome-512x512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        },
+        {
+            "src": "icons/apple-touch-icon.png",
+            "type": "image/png",
+            "sizes": "180x180"
+        },
+        {
+            "src": "icons/favicon-32x32.png",
+            "type": "image/png",
+            "sizes": "32x32"
+        },
+        {
+            "src": "icons/favicon-16x16.png",
+            "type": "image/png",
+            "sizes": "16x16"
+        }
+    ]
+}
