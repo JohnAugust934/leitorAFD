@@ -8,6 +8,17 @@ var clearButton = document.getElementById("clearButton");
 var themeSwitcherButton = document.getElementById("themeSwitcherButton");
 var fileNameDisplay = document.getElementById("fileNameDisplay");
 var scrollTopBottomButton = document.getElementById("scrollTopBottomButton");
+var loadingOverlay = document.getElementById("loadingOverlay");
+var validationErrorsSection = document.getElementById(
+  "validationErrorsSection"
+);
+var validationErrorsList = document.getElementById("validationErrorsList");
+var closeValidationErrorsButton = document.getElementById(
+  "closeValidationErrorsButton"
+); // Novo
+var tableHeaders = document.querySelectorAll(
+  '#fileTable th[data-sortable="true"]'
+);
 
 var fileSummarySection = document.getElementById("fileSummarySection");
 var fileSummaryContent = document.getElementById("fileSummaryContent");
@@ -19,11 +30,15 @@ var rowsPerPageSelect = document.getElementById("rowsPerPageSelect");
 var totalRowsInfo = document.getElementById("totalRowsInfo");
 
 var dataRows = [];
-var filteredDataRows = [];
+var filteredAndSortedRows = [];
 var originalRowCount = 0;
 var isScrolledToBottom = false;
 var currentPage = 1;
 var rowsPerPage = 50;
+
+var currentSortColumn = null;
+var currentSortDirection = "asc";
+let loadingTimeoutId = null; // Para controlar o tempo mínimo do spinner
 
 /**
  * Valida um número de PIS/PASEP/NIS.
@@ -57,6 +72,58 @@ function updateBodyHeight() {
   }
 }
 
+/**
+ * Mostra ou esconde o overlay de carregamento, garantindo um tempo mínimo de exibição.
+ * @param {boolean} show - True para mostrar, false para esconder.
+ */
+function toggleLoadingOverlay(show) {
+  if (loadingOverlay) {
+    if (show) {
+      loadingOverlay.classList.add("show"); // Usa classe para transição CSS
+      // Define um timeout para esconder o spinner, caso o processamento seja muito rápido
+      if (loadingTimeoutId) clearTimeout(loadingTimeoutId); // Limpa timeout anterior
+      loadingTimeoutId = setTimeout(() => {
+        // Só esconde se ainda estiver programado para esconder (ou seja, se show ainda for true implicitamente)
+        // A lógica de esconder de fato virá após o processamento do worker.
+        // Este timeout é mais para garantir que ele APAREÇA.
+      }, 500); // Garante pelo menos 500ms de exibição
+    } else {
+      if (loadingTimeoutId) clearTimeout(loadingTimeoutId);
+      loadingOverlay.classList.remove("show");
+    }
+  }
+}
+
+function displayValidationErrors(errors) {
+  if (!validationErrorsSection || !validationErrorsList) return;
+  if (errors && errors.length > 0) {
+    validationErrorsList.innerHTML = "";
+    errors.forEach((err) => {
+      const li = document.createElement("li");
+      li.innerHTML = `Linha ${err.lineNumber}: Campo "<strong>${
+        err.field
+      }</strong>" (valor: <code>${escapeHtml(
+        String(err.value)
+      )}</code>) - ${escapeHtml(err.error)}`;
+      validationErrorsList.appendChild(li);
+    });
+    validationErrorsSection.style.display = "block";
+    // Não mostra alerta aqui, pois a seção de erros já é o feedback principal
+  } else {
+    validationErrorsSection.style.display = "none";
+  }
+}
+
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== "string") return unsafe;
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function displayFileContents(rowsToDisplay, page, perPage) {
   if (!fileTableBody) {
     console.error("Elemento fileTableBody não encontrado.");
@@ -78,40 +145,26 @@ function displayFileContents(rowsToDisplay, page, perPage) {
     tr.appendChild(td);
     fragment.appendChild(tr);
     toggleScrollButtonVisibility(false);
-    renderPaginationControls(0, 1, perPage); // Chama para esconder ou mostrar apenas o select
+    renderPaginationControls(0, 1, perPage);
   } else {
     let paginatedItems;
     let start = 0;
 
     if (perPage === "all") {
       paginatedItems = rowsToDisplay;
-      start = 0;
     } else {
       start = (page - 1) * perPage;
       var end = start + perPage;
       paginatedItems = rowsToDisplay.slice(start, end);
     }
 
-    paginatedItems.forEach(function (row, indexInPage) {
+    paginatedItems.forEach(function (row) {
       var tr = document.createElement("tr");
       var rowNumberCell = document.createElement("td");
-      let originalIndex = -1;
-      if (rowsToDisplay === dataRows) {
-        originalIndex = start + indexInPage;
-      } else {
-        const paginatedRowData = paginatedItems[indexInPage];
-        originalIndex = dataRows.findIndex(
-          (dr) =>
-            dr.nsr === paginatedRowData.nsr &&
-            dr.pis === paginatedRowData.pis &&
-            dr.data === paginatedRowData.data &&
-            dr.hora === paginatedRowData.hora &&
-            dr.codigoEvento === paginatedRowData.codigoEvento
-        );
-      }
       rowNumberCell.textContent =
-        originalIndex !== -1 ? originalIndex + 1 : start + indexInPage + 1;
+        row.originalLineNumber || dataRows.indexOf(row) + 1;
       tr.appendChild(rowNumberCell);
+
       ["nsr", "codigoEvento", "data", "hora", "pis", "crc"].forEach(function (
         key
       ) {
@@ -129,12 +182,6 @@ function displayFileContents(rowsToDisplay, page, perPage) {
   updateBodyHeight();
 }
 
-/**
- * Renderiza os controles de paginação.
- * @param {number} totalItems - Total de itens a serem paginados (no array filtrado/atual).
- * @param {number} currentPageNum - Número da página atual.
- * @param {number|string} itemsPerPage - Itens por página ou "all".
- */
 function renderPaginationControls(totalItems, currentPageNum, itemsPerPage) {
   if (
     !paginationControls ||
@@ -146,17 +193,17 @@ function renderPaginationControls(totalItems, currentPageNum, itemsPerPage) {
   )
     return;
 
-  if (totalItems === 0) {
+  if (totalItems === 0 && itemsPerPage !== "all") {
     paginationControls.style.display = "none";
     return;
   }
-  paginationControls.style.display = "flex"; // Garante que a div principal esteja visível
+  paginationControls.style.display = "flex";
 
   if (itemsPerPage === "all") {
     pageInfo.style.display = "none";
     prevPageButton.style.display = "none";
     nextPageButton.style.display = "none";
-    rowsPerPageSelect.style.display = "inline-block"; // Mantém o select visível
+    rowsPerPageSelect.style.display = "inline-block";
     totalRowsInfo.textContent = `Exibindo todos os ${totalItems} registros.`;
     totalRowsInfo.style.display = "inline";
   } else {
@@ -262,7 +309,7 @@ function calculateAndDisplaySummary(allRowsFromFile) {
   eventosHtml += "</ul>";
 
   fileSummaryContent.innerHTML = `
-        <p><strong>Total de Registros no Arquivo:</strong> ${totalRegistros}</p>
+        <p><strong>Total de Registros Processados:</strong> ${totalRegistros}</p>
         <p><strong>Período Coberto (estimado):</strong> ${periodo}</p>
         <p><strong>Total de PIS Únicos (formato 11 dígitos):</strong> ${totalPisUnicosFormatados}</p>
         <p><strong>PIS Válidos (checksum OK):</strong> <span class="summary-valid">${pisValidos}</span></p>
@@ -312,11 +359,24 @@ function clearSearchInputs() {
   searchInputs.forEach(function (input) {
     if (input) input.value = "";
   });
+  tableHeaders.forEach((th) => th.classList.remove("searching-column"));
+}
+
+function applyCurrentFiltersAndSort() {
+  displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
 }
 
 function clearHighlightingAndFilters() {
-  filteredDataRows = [...dataRows];
+  filteredAndSortedRows = [...dataRows];
   currentPage = 1;
+  currentSortColumn = null;
+  currentSortDirection = "asc";
+  tableHeaders.forEach((th) => {
+    const indicator = th.querySelector(".sort-indicator");
+    if (indicator) indicator.className = "sort-indicator";
+    th.classList.remove("searching-column");
+  });
+
   if (rowsPerPageSelect && rowsPerPageSelect.value !== "all") {
     rowsPerPage = parseInt(rowsPerPageSelect.value) || 50;
   } else if (rowsPerPageSelect && rowsPerPageSelect.value === "all") {
@@ -324,12 +384,18 @@ function clearHighlightingAndFilters() {
   } else {
     rowsPerPage = 50;
   }
-  displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+  displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+  clearSearchInputs();
 }
 
 function searchTable(columnIndex, inputValue) {
   if (!fileTableBody) return;
   var searchTerm = inputValue.trim().toLowerCase();
+
+  tableHeaders.forEach((th) => th.classList.remove("searching-column"));
+  var currentHeader = document.querySelector(
+    `#fileTable th:nth-child(${columnIndex + 1})`
+  );
 
   if (columnIndex === 6) {
     showAlert("A coluna CRC não é pesquisável.", "info");
@@ -337,11 +403,21 @@ function searchTable(columnIndex, inputValue) {
   }
 
   if (searchTerm === "") {
-    clearHighlightingAndFilters();
+    if (currentHeader) currentHeader.classList.remove("searching-column");
+    filteredAndSortedRows = [...dataRows];
+    if (currentSortColumn) {
+      sortData(currentSortColumn, currentSortDirection, false);
+    }
+    currentPage = 1;
+    displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
     return;
   }
 
-  filteredDataRows = dataRows.filter(function (row) {
+  if (currentHeader) {
+    currentHeader.classList.add("searching-column");
+  }
+
+  filteredAndSortedRows = dataRows.filter(function (row) {
     var keys = ["nsr", "codigoEvento", "data", "hora", "pis", "crc"];
     var keyIndex = columnIndex - 1;
 
@@ -352,17 +428,12 @@ function searchTable(columnIndex, inputValue) {
     return false;
   });
 
+  if (currentSortColumn) {
+    sortData(currentSortColumn, currentSortDirection, false);
+  }
+
   currentPage = 1;
-  let currentRowsPerPageSetting = rowsPerPageSelect
-    ? rowsPerPageSelect.value
-    : rowsPerPage;
-  displayFileContents(
-    filteredDataRows,
-    currentPage,
-    currentRowsPerPageSetting === "all"
-      ? "all"
-      : parseInt(currentRowsPerPageSetting)
-  );
+  displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
 
   var tableRowsRendered = fileTableBody.getElementsByTagName("tr");
   var matchCount = 0;
@@ -390,12 +461,7 @@ function searchTable(columnIndex, inputValue) {
     }
   }
 
-  if (matchCount > 0) {
-    showAlert(
-      matchCount + " correspondências encontradas nos resultados filtrados.",
-      "success"
-    );
-  } else {
+  if (matchCount === 0) {
     showAlert(
       'Nenhuma correspondência encontrada para "' + inputValue + '".',
       "info"
@@ -405,7 +471,7 @@ function searchTable(columnIndex, inputValue) {
 
 function toggleScrollButtonVisibility(show) {
   if (scrollTopBottomButton) {
-    if (show && (filteredDataRows.length > 0 || dataRows.length > 0)) {
+    if (show && (filteredAndSortedRows.length > 0 || dataRows.length > 0)) {
       scrollTopBottomButton.style.display = "flex";
       setTimeout(() => scrollTopBottomButton.classList.add("visible"), 10);
     } else {
@@ -432,6 +498,60 @@ function setScrollButtonState(atBottom) {
   }
 }
 
+function sortData(columnKey, direction, toggleDirection = true) {
+  if (toggleDirection) {
+    currentSortDirection =
+      currentSortColumn === columnKey && currentSortDirection === "asc"
+        ? "desc"
+        : "asc";
+  } else {
+    currentSortDirection = direction;
+  }
+  currentSortColumn = columnKey;
+
+  tableHeaders.forEach((th) => {
+    const indicator = th.querySelector(".sort-indicator");
+    if (indicator) {
+      indicator.className = "sort-indicator";
+      if (th.dataset.columnKey === columnKey) {
+        indicator.classList.add(currentSortDirection);
+      }
+    }
+  });
+
+  filteredAndSortedRows.sort((a, b) => {
+    let valA = a[columnKey];
+    let valB = b[columnKey];
+
+    if (columnKey === "originalLineNumber") {
+      valA = parseInt(a.originalLineNumber) || 0;
+      valB = parseInt(b.originalLineNumber) || 0;
+    } else if (columnKey === "data") {
+      const partsA = String(valA || "").split("/");
+      const partsB = String(valB || "").split("/");
+      if (partsA.length === 3) valA = `${partsA[2]}-${partsA[1]}-${partsA[0]}`;
+      else valA = "";
+      if (partsB.length === 3) valB = `${partsB[2]}-${partsB[1]}-${partsB[0]}`;
+      else valB = "";
+    } else if (columnKey === "hora") {
+      valA = String(valA || "").replace(":", "");
+      valB = String(valB || "").replace(":", "");
+    } else if (["nsr", "pis", "codigoEvento", "crc"].includes(columnKey)) {
+      valA = String(valA || "").toLowerCase();
+      valB = String(valB || "").toLowerCase();
+    } else if (typeof valA === "string") {
+      valA = valA.toLowerCase();
+      valB = String(valB || "").toLowerCase();
+    }
+
+    if (valA < valB) return currentSortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return currentSortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+}
+
+// --- Event Listeners ---
+
 if (fileInput) {
   fileInput.addEventListener("change", function (e) {
     var file = e.target.files[0];
@@ -442,14 +562,16 @@ if (fileInput) {
       toggleScrollButtonVisibility(false);
       if (fileSummarySection) fileSummarySection.style.display = "none";
       if (paginationControls) paginationControls.style.display = "none";
+      if (validationErrorsSection)
+        validationErrorsSection.style.display = "none";
       return;
     }
     if (fileNameDisplay) fileNameDisplay.textContent = file.name;
 
     if (removeButton) removeButton.disabled = true;
     if (clearButton) clearButton.disabled = true;
-
-    showAlert("Processando arquivo, por favor aguarde...", "info");
+    toggleLoadingOverlay(true);
+    if (validationErrorsSection) validationErrorsSection.style.display = "none";
 
     var reader = new FileReader();
     reader.onload = function (eventReader) {
@@ -466,52 +588,80 @@ if (fileInput) {
         if (removeButton) removeButton.disabled = false;
         if (clearButton) clearButton.disabled = false;
         toggleScrollButtonVisibility(false);
+        toggleLoadingOverlay(false);
         return;
       }
 
+      const processingStartTime = Date.now(); // Marca o início do processamento
+
       worker.onmessage = function (eventWorker) {
-        var existingAlert = document.querySelector(".alert-overlay");
-        if (existingAlert) document.body.removeChild(existingAlert);
+        const processingTime = Date.now() - processingStartTime;
+        const minDisplayTime = 500; // Tempo mínimo para exibir o spinner em ms
 
-        if (eventWorker.data.error) {
-          showAlert(
-            "Erro ao analisar o arquivo AFD:\n" + eventWorker.data.error,
-            "error"
-          );
-          dataRows = [];
-        } else if (!eventWorker.data || eventWorker.data.length === 0) {
-          showAlert(
-            "Arquivo carregado está vazio ou não contém dados AFD reconhecíveis.",
-            "info"
-          );
-          dataRows = [];
+        const hideSpinner = () => {
+          toggleLoadingOverlay(false);
+          var result = eventWorker.data;
+
+          if (result.errors && result.errors.length > 0) {
+            displayValidationErrors(result.errors);
+          } else {
+            if (validationErrorsSection)
+              validationErrorsSection.style.display = "none";
+          }
+
+          if (!result.data || result.data.length === 0) {
+            if (!result.errors || result.errors.length === 0) {
+              showAlert(
+                "Arquivo carregado está vazio ou não contém dados AFD reconhecíveis.",
+                "info"
+              );
+            }
+            dataRows = [];
+          } else {
+            dataRows = result.data;
+            if (!result.errors || result.errors.length === 0) {
+              showAlert(
+                dataRows.length + " linhas processadas com sucesso!",
+                "success"
+              );
+            }
+          }
+
+          filteredAndSortedRows = [...dataRows];
+          originalRowCount = dataRows.length;
+          calculateAndDisplaySummary(dataRows);
+          currentPage = 1;
+          let currentRowsPerPageSetting = rowsPerPageSelect
+            ? rowsPerPageSelect.value
+            : rowsPerPage;
+          rowsPerPage =
+            currentRowsPerPageSetting === "all"
+              ? "all"
+              : parseInt(currentRowsPerPageSetting);
+
+          currentSortColumn = null;
+          currentSortDirection = "asc";
+          tableHeaders.forEach((th) => {
+            const indicator = th.querySelector(".sort-indicator");
+            if (indicator) indicator.className = "sort-indicator";
+            th.classList.remove("searching-column");
+          });
+
+          displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+
+          if (removeButton) removeButton.disabled = dataRows.length === 0;
+          if (clearButton) clearButton.disabled = false;
+          clearSearchInputs();
+        };
+
+        if (processingTime < minDisplayTime) {
+          setTimeout(hideSpinner, minDisplayTime - processingTime);
         } else {
-          dataRows = eventWorker.data;
-          showAlert(
-            dataRows.length + " linhas processadas com sucesso!",
-            "success"
-          );
+          hideSpinner();
         }
-        filteredDataRows = [...dataRows];
-        originalRowCount = dataRows.length;
-        calculateAndDisplaySummary(dataRows);
-        currentPage = 1;
-        let currentRowsPerPageSetting = rowsPerPageSelect
-          ? rowsPerPageSelect.value
-          : rowsPerPage;
-        rowsPerPage =
-          currentRowsPerPageSetting === "all"
-            ? "all"
-            : parseInt(currentRowsPerPageSetting);
-        displayFileContents(filteredDataRows, currentPage, rowsPerPage);
-
-        if (removeButton) removeButton.disabled = dataRows.length === 0;
-        if (clearButton) clearButton.disabled = false;
-        clearSearchInputs();
       };
       worker.onerror = function (error) {
-        var existingAlert = document.querySelector(".alert-overlay");
-        if (existingAlert) document.body.removeChild(existingAlert);
+        toggleLoadingOverlay(false);
         console.error(
           "Erro no Web Worker:",
           error.message,
@@ -529,8 +679,7 @@ if (fileInput) {
       worker.postMessage(contents);
     };
     reader.onerror = function () {
-      var existingAlert = document.querySelector(".alert-overlay");
-      if (existingAlert) document.body.removeChild(existingAlert);
+      toggleLoadingOverlay(false);
       showAlert("Ocorreu um erro ao ler o arquivo selecionado.", "error");
       if (removeButton) removeButton.disabled = false;
       if (clearButton) clearButton.disabled = false;
@@ -547,12 +696,13 @@ if (removeButton) {
       fileNameDisplay.textContent = "Nenhum arquivo selecionado";
     removeButton.disabled = true;
     dataRows = [];
-    filteredDataRows = [];
+    filteredAndSortedRows = [];
     originalRowCount = 0;
     clearSearchInputs();
     displayFileContents([]);
     if (fileSummarySection) fileSummarySection.style.display = "none";
     if (paginationControls) paginationControls.style.display = "none";
+    if (validationErrorsSection) validationErrorsSection.style.display = "none";
   });
 }
 
@@ -621,7 +771,7 @@ if (scrollTopBottomButton) {
     }
   });
   window.addEventListener("scroll", function () {
-    if (filteredDataRows.length > 0 || dataRows.length > 0) {
+    if (filteredAndSortedRows.length > 0 || dataRows.length > 0) {
       if (
         window.innerHeight + window.scrollY + 150 >=
         document.body.scrollHeight
@@ -641,17 +791,17 @@ if (prevPageButton) {
   prevPageButton.addEventListener("click", () => {
     if (currentPage > 1) {
       currentPage--;
-      displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+      displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
     }
   });
 }
 if (nextPageButton) {
   nextPageButton.addEventListener("click", () => {
     if (rowsPerPage === "all") return;
-    var totalPages = Math.ceil(filteredDataRows.length / rowsPerPage);
+    var totalPages = Math.ceil(filteredAndSortedRows.length / rowsPerPage);
     if (currentPage < totalPages) {
       currentPage++;
-      displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+      displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
     }
   });
 }
@@ -664,7 +814,26 @@ if (rowsPerPageSelect) {
       rowsPerPage = parseInt(selectedValue);
     }
     currentPage = 1;
-    displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+    displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+  });
+}
+
+tableHeaders.forEach((th) => {
+  th.addEventListener("click", function () {
+    const columnKey = this.dataset.columnKey;
+    if (columnKey && this.dataset.sortable === "true") {
+      sortData(columnKey, currentSortDirection);
+      displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+    }
+  });
+});
+
+// Event listener para fechar a seção de erros de validação
+if (closeValidationErrorsButton) {
+  closeValidationErrorsButton.addEventListener("click", function () {
+    if (validationErrorsSection) {
+      validationErrorsSection.style.display = "none";
+    }
   });
 }
 
@@ -691,6 +860,7 @@ window.addEventListener("DOMContentLoaded", () => {
   displayFileContents([]);
   if (fileSummarySection) fileSummarySection.style.display = "none";
   if (paginationControls) paginationControls.style.display = "none";
+  if (validationErrorsSection) validationErrorsSection.style.display = "none";
   updateBodyHeight();
 });
 

@@ -23,13 +23,19 @@
 </head>
 
 <body>
+    <!-- Overlay de Carregamento -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processando arquivo...</p>
+    </div>
+
     <div class="container">
         <header class="app-header">
             <div class="header-title-wrapper">
                 <h1>Leitor AFD</h1>
                 <span class="design-by">Design by: <a href="http://johnaugust934.com.br" target="_blank"
                         rel="noopener noreferrer">João Augusto</a></span>
-                <span class="app-version">v2.1.4 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
+                <span class="app-version">v2.2.1 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
             </div>
             <button id="themeSwitcherButton" class="theme-switcher" title="Alternar Tema">🌙</button>
         </header>
@@ -53,6 +59,15 @@
             </div>
         </div>
 
+        <!-- Seção de Erros de Validação do Arquivo -->
+        <div id="validationErrorsSection" class="validation-errors-section" style="display: none;">
+            <div class="validation-errors-header">
+                <h3>⚠️ Erros de Validação Encontrados no Arquivo:</h3>
+                <button id="closeValidationErrorsButton" class="close-errors-button" title="Fechar Erros">✖</button>
+            </div>
+            <ul id="validationErrorsList"></ul>
+        </div>
+
         <div id="fileSummarySection" class="file-summary-section" style="display: none;">
             <h2>Resumo do Arquivo AFD</h2>
             <div id="fileSummaryContent" class="file-summary-content">
@@ -63,44 +78,45 @@
         <table id="fileTable">
             <thead>
                 <tr>
-                    <th>LINHAS:</th>
-                    <th>
-                        NSR:
+                    <th data-sortable="true" data-column-key="originalLineNumber">LINHAS: <span
+                            class="sort-indicator"></span></th>
+                    <th data-sortable="true" data-column-key="nsr">
+                        NSR: <span class="sort-indicator"></span>
                         <div>
                             <input class="search-input" type="text" placeholder="Buscar NSR" maxlength="9">
                             <button class="search-button">Pesquisar</button>
                         </div>
                     </th>
-                    <th>
-                        CÓDIGO DO EVENTO:
+                    <th data-sortable="true" data-column-key="codigoEvento">
+                        CÓDIGO EVENTO: <span class="sort-indicator"></span> <!-- Texto ajustado para caber melhor -->
                         <div>
                             <input class="search-input" type="text" placeholder="Buscar Código" maxlength="1">
                             <button class="search-button">Pesquisar</button>
                         </div>
                     </th>
-                    <th>
-                        DATA:
+                    <th data-sortable="true" data-column-key="data">
+                        DATA: <span class="sort-indicator"></span>
                         <div>
                             <input class="search-input" type="text" placeholder="Buscar Data (dd/mm/aaaa)"
                                 maxlength="10">
                             <button class="search-button">Pesquisar</button>
                         </div>
                     </th>
-                    <th>
-                        HORA:
+                    <th data-sortable="true" data-column-key="hora">
+                        HORA: <span class="sort-indicator"></span>
                         <div>
                             <input class="search-input" type="text" placeholder="Buscar Hora (hh:mm)" maxlength="5">
                             <button class="search-button">Pesquisar</button>
                         </div>
                     </th>
-                    <th>
-                        PIS:
+                    <th data-sortable="true" data-column-key="pis">
+                        PIS: <span class="sort-indicator"></span>
                         <div>
                             <input class="search-input" type="text" placeholder="Buscar PIS" maxlength="12">
                             <button class="search-button">Pesquisar</button>
                         </div>
                     </th>
-                    <th>
+                    <th data-sortable="false">
                         CRC:
                     </th>
                 </tr>
@@ -119,7 +135,7 @@
                 <option value="50" selected>50</option>
                 <option value="100">100</option>
                 <option value="200">200</option>
-                <option value="all">Todos</option> <!-- NOVA OPÇÃO "TODOS" -->
+                <option value="all">Todos</option>
             </select>
             <span id="totalRowsInfo"></span>
         </div>
