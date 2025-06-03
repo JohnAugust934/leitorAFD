@@ -1,6 +1,6 @@
-const CACHE_NAME = "leitor-afd-pwa-cache-v1.1"; // Incremente a versão se fizer alterações significativas nos arquivos cacheados
+const CACHE_NAME = "leitor-afd-pwa-cache-v1.3"; // Versão incrementada!
 const urlsToCache = [
-  "/", // Atalho para index.html
+  "/",
   "index.html",
   "css/reset.css",
   "css/style.css",
@@ -9,19 +9,18 @@ const urlsToCache = [
   "js/fileWorker.js",
   "manifest.json",
   "AFD00004004330144881.txt",
-  // Seus ícones (certifique-se que os caminhos estão corretos a partir da raiz)
+  // Seus ícones:
   "icons/android-chrome-192x192.png",
   "icons/android-chrome-512x512.png",
   "icons/apple-touch-icon.png",
   "icons/favicon-32x32.png",
   "icons/favicon-16x16.png",
-  "icons/favicon.ico", // Se você tem um .ico, adicione também
-  "notepad.png", // Se este é o seu favicon principal usado no index.html
+  "icons/favicon.ico",
 ];
 
-// Evento de Instalação: Cacheia os arquivos principais da aplicação
+// Evento de Instalação: (Restante do código do service worker permanece o mesmo da Parte 2)
 self.addEventListener("install", function (event) {
-  console.log("[ServiceWorker] Instalando...");
+  console.log("[ServiceWorker] Instalando v" + CACHE_NAME);
   event.waitUntil(
     caches
       .open(CACHE_NAME)
@@ -31,13 +30,13 @@ self.addEventListener("install", function (event) {
         );
         return cache.addAll(
           urlsToCache.map((url) => new Request(url, { cache: "reload" }))
-        ); // Garante que pegue da rede na instalação
+        );
       })
       .then(function () {
         console.log(
           "[ServiceWorker] Todos os arquivos foram cacheados com sucesso."
         );
-        return self.skipWaiting(); // Força o novo service worker a ativar imediatamente
+        return self.skipWaiting();
       })
       .catch(function (error) {
         console.error(
@@ -48,9 +47,9 @@ self.addEventListener("install", function (event) {
   );
 });
 
-// Evento de Ativação: Limpa caches antigos
+// Evento de Ativação: (Permanece o mesmo)
 self.addEventListener("activate", function (event) {
-  console.log("[ServiceWorker] Ativando...");
+  console.log("[ServiceWorker] Ativando v" + CACHE_NAME);
   event.waitUntil(
     caches
       .keys()
@@ -68,23 +67,17 @@ self.addEventListener("activate", function (event) {
         console.log(
           "[ServiceWorker] Cache antigo removido, novo Service Worker ativado e controlando clientes."
         );
-        return self.clients.claim(); // Torna-se o service worker ativo para todas as abas abertas
+        return self.clients.claim();
       })
   );
 });
 
-// Evento Fetch: Intercepta as requisições de rede
-// Estratégia: Cache first, then network (com atualização em segundo plano para assets)
+// Evento Fetch: (Permanece o mesmo)
 self.addEventListener("fetch", function (event) {
-  // console.log('[ServiceWorker] Buscando:', event.request.url);
-
-  // Para requisições de navegação (ex: HTML), tente a rede primeiro para conteúdo fresco,
-  // mas caia para o cache se offline.
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Se a rede funcionar, clone e coloque no cache
           if (response && response.ok) {
             const responseToCache = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -94,16 +87,12 @@ self.addEventListener("fetch", function (event) {
           return response;
         })
         .catch(() => {
-          // Se a rede falhar, tente pegar do cache
           return caches.match(event.request);
         })
     );
     return;
   }
 
-  // Para outros assets (CSS, JS, Imagens), use a estratégia "Stale-While-Revalidate"
-  // Responde do cache imediatamente se disponível (rápido),
-  // e em paralelo, busca na rede para atualizar o cache para a próxima vez.
   event.respondWith(
     caches.open(CACHE_NAME).then(function (cache) {
       return cache.match(event.request).then(function (response) {
@@ -120,7 +109,6 @@ self.addEventListener("fetch", function (event) {
               event.request.url,
               error
             );
-            // Poderia retornar uma resposta offline padrão para imagens/assets aqui se desejado
             throw error;
           });
         return response || fetchPromise;

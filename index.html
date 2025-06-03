@@ -7,90 +7,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leitor AFD - PWA</title>
 
-    <link rel="shortcut icon" href="notepad.png" type="image/x-icon">
+    <link rel="shortcut icon" href="icons/favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 
     <link rel="stylesheet" href="css/reset.css">
     <link rel="stylesheet" href="css/style.css">
 
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#FFF886" />
+    <meta name="theme-color" content="#22272e" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LeitorAFD">
 </head>
 
 <body>
-    <h1>Leitor AFD</h1>
-    <span>Design by: <a href="http://johnaugust934.com.br" target="_blank" rel="noopener noreferrer">João
-            Augusto</a></span>
+    <div class="container">
+        <header class="app-header">
+            <div class="header-title-wrapper">
+                <h1>Leitor AFD</h1>
+                <span class="design-by">Design by: <a href="http://johnaugust934.com.br" target="_blank"
+                        rel="noopener noreferrer">João Augusto</a></span>
+            </div>
+            <button id="themeSwitcherButton" class="theme-switcher" title="Alternar Tema">🌙</button>
+        </header>
 
-    <div class="topo">
-        <div>
-            <h2>Insira seu arquivo AFD:</h2>
-            <input class="escolherArquivo" type="file" id="fileInput" accept=".txt, .afd"> <button id="removeButton"
-                disabled>Remover Arquivo</button>
+        <div class="topo">
+            <div>
+                <h2>Insira seu arquivo AFD:</h2>
+                <label for="fileInput" class="custom-file-upload-button">Selecionar Arquivo</label>
+                <input type="file" id="fileInput" accept=".txt, .afd" style="display: none;">
+                <span id="fileNameDisplay" class="file-name-display">Nenhum arquivo selecionado</span>
+                <button id="removeButton" disabled>Remover Arquivo</button>
+            </div>
+            <div>
+                <h2>Limpar campos de busca:</h2>
+                <button id="clearButton">Limpar Busca</button>
+            </div>
+            <div>
+                <h2>Arquivo para teste:</h2>
+                <a id="downloadButton" href="AFD00004004330144881.txt" download="AFD_Teste.txt">Download Arquivo
+                    Teste</a>
+            </div>
         </div>
-        <div>
-            <h2>Limpar campos de busca:</h2>
-            <button id="clearButton">Limpar Busca</button>
-        </div>
-        <div>
-            <h2>Arquivo para teste:</h2>
-            <a id="downloadButton" href="AFD00004004330144881.txt" download="AFD_Teste.txt">Download Arquivo Teste</a>
-        </div>
-    </div>
 
-    <table id="fileTable">
-        <thead>
-            <tr>
-                <th>LINHAS:</th>
-                <th>
-                    NSR:
-                    <div>
-                        <input class="search-input" type="text" placeholder="Buscar NSR" maxlength="9">
-                        <button class="search-button">Pesquisar</button>
-                    </div>
-                </th>
-                <th>
-                    CÓDIGO DO EVENTO:
-                    <div>
-                        <input class="search-input" type="text" placeholder="Buscar Código" maxlength="1">
-                        <button class="search-button">Pesquisar</button>
-                    </div>
-                </th>
-                <th>
-                    DATA:
-                    <div>
-                        <input class="search-input" type="text" placeholder="Buscar Data (dd/mm/aaaa)" maxlength="10">
-                        <button class="search-button">Pesquisar</button>
-                    </div>
-                </th>
-                <th>
-                    HORA:
-                    <div>
-                        <input class="search-input" type="text" placeholder="Buscar Hora (hh:mm)" maxlength="5">
-                        <button class="search-button">Pesquisar</button>
-                    </div>
-                </th>
-                <th>
-                    PIS:
-                    <div>
-                        <input class="search-input" type="text" placeholder="Buscar PIS" maxlength="12">
-                        <button class="search-button">Pesquisar</button>
-                    </div>
-                </th>
-                <th>
-                    CRC:
-                    <div>
-                        <input class="search-input" type="text" placeholder="Buscar CRC" maxlength="4">
-                        <button class="search-button">Pesquisar</button>
-                    </div>
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
+        <table id="fileTable">
+            <thead>
+                <tr>
+                    <th>LINHAS:</th>
+                    <th>
+                        NSR:
+                        <div>
+                            <input class="search-input" type="text" placeholder="Buscar NSR" maxlength="9">
+                            <button class="search-button">Pesquisar</button>
+                        </div>
+                    </th>
+                    <th>
+                        CÓDIGO DO EVENTO:
+                        <div>
+                            <input class="search-input" type="text" placeholder="Buscar Código" maxlength="1">
+                            <button class="search-button">Pesquisar</button>
+                        </div>
+                    </th>
+                    <th>
+                        DATA:
+                        <div>
+                            <input class="search-input" type="text" placeholder="Buscar Data (dd/mm/aaaa)"
+                                maxlength="10">
+                            <button class="search-button">Pesquisar</button>
+                        </div>
+                    </th>
+                    <th>
+                        HORA:
+                        <div>
+                            <input class="search-input" type="text" placeholder="Buscar Hora (hh:mm)" maxlength="5">
+                            <button class="search-button">Pesquisar</button>
+                        </div>
+                    </th>
+                    <th>
+                        PIS:
+                        <div>
+                            <input class="search-input" type="text" placeholder="Buscar PIS" maxlength="12">
+                            <button class="search-button">Pesquisar</button>
+                        </div>
+                    </th>
+                    <th>
+                        CRC:
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div> <button id="scrollTopBottomButton" class="scroll-button" title="Descer até o final"
+        style="display: none;">⬇️</button>
 
     <script src="js/app.js" defer></script>
     <script src="js/script.js" defer></script>
