@@ -22,7 +22,7 @@
   --scrollbar-thumb-color: #444c56;
   --scrollbar-thumb-hover-color: #555e6a;
   --font-family-default: "Montserrat", sans-serif;
-  --table-header-bg: #373e47; /* Cor de fundo para o cabeçalho sticky */
+  --table-header-bg: #373e47;
   --input-invalid-border-color: var(--danger-color);
   --input-invalid-shadow-color: rgba(248, 81, 73, 0.4);
 }
@@ -47,7 +47,7 @@ body.theme-light {
   --scrollbar-track-color: #f0f0f0;
   --scrollbar-thumb-color: #bdc3c7;
   --scrollbar-thumb-hover-color: #95a5a6;
-  --table-header-bg: #e9ecef; /* Cor de fundo para o cabeçalho sticky no tema claro */
+  --table-header-bg: #e9ecef;
   --input-invalid-border-color: var(--danger-color);
   --input-invalid-shadow-color: rgba(209, 36, 47, 0.3);
 }
@@ -223,24 +223,26 @@ span.design-by a {
 /* TOPO DO SITE (Controles) */
 .topo {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Mantém empilhado por padrão */
   gap: 20px;
   background-color: var(--surface-bg-color);
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  margin-bottom: 30px;
+  margin-bottom: 20px; /* Reduzido um pouco */
   width: 100%;
 }
 
-@media (min-width: 992px) {
+/* Ajusta para layout em linha em telas maiores */
+@media (min-width: 768px) {
+  /* Ponto de quebra menor para 2 colunas */
   .topo {
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: space-between; /* Espaça os dois itens restantes */
     align-items: flex-start;
   }
   .topo > div {
-    flex: 1 1 auto;
+    flex: 1; /* Permite que ambos cresçam igualmente */
     margin: 0 10px;
   }
   .topo > div:first-child {
@@ -319,12 +321,21 @@ button#removeButton:hover {
   box-shadow: 0 2px 8px rgba(248, 81, 73, 0.3);
 }
 
-button#clearButton {
+/* Botão Limpar Busca agora é .clear-table-button */
+.clear-table-button {
   background-color: #768390;
+  display: inline-flex; /* Para alinhar ícone e texto */
+  align-items: center;
+  gap: 8px; /* Espaço entre ícone e texto */
+  padding: 8px 15px; /* Ajuste de padding */
+  font-size: 0.9em;
 }
-button#clearButton:hover {
+.clear-table-button:hover {
   background-color: #57606a;
   box-shadow: 0 2px 8px rgba(118, 131, 144, 0.3);
+}
+.clear-table-button svg {
+  stroke: white; /* Cor do ícone */
 }
 
 button:disabled {
@@ -412,7 +423,7 @@ a#downloadButton:hover {
   padding: 15px 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  margin-bottom: 20px;
+  margin-bottom: 10px; /* Reduzido para aproximar do table-controls-header */
 }
 .file-summary-header {
   display: flex;
@@ -489,28 +500,34 @@ a#downloadButton:hover {
   font-weight: bold;
 }
 
+/* CONTROLES DA TABELA (NOVO WRAPPER PARA BOTÃO LIMPAR) */
+.table-controls-header {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end; /* Alinha o botão à direita */
+  align-items: center;
+  margin-bottom: 10px; /* Espaço antes da tabela */
+}
+
 /* TABELA E CABEÇALHO STICKY */
 .table-container {
   width: 100%;
   overflow-y: auto;
   max-height: 70vh;
   border-radius: 8px;
-  /* background-color: var(--surface-bg-color); /* Removido para não conflitar com o sticky header da tabela */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  margin-top: 20px;
-  border: 1px solid var(--border-color); /* Adiciona borda ao container da tabela */
+  /* margin-top: 20px; /* Removido, pois table-controls-header já tem margin-bottom */
+  border: 1px solid var(--border-color);
 }
 
 #fileTable {
   width: 100%;
   border-collapse: collapse;
-  /* table-layout: fixed; /* Comentado para permitir que as colunas se ajustem melhor */
 }
 
 #fileTable thead {
-  position: -webkit-sticky; /* Para Safari */
   position: sticky;
-  top: -1px; /* Ajuste fino para evitar que a borda do container cubra a borda do thead */
+  top: -1px;
   z-index: 10;
   background-color: var(--table-header-bg);
 }
@@ -527,36 +544,35 @@ a#downloadButton:hover {
   vertical-align: top;
 }
 
-/* Ajustando larguras das colunas */
 #fileTable th:nth-child(1),
 #fileTable td:nth-child(1) {
   width: 5%;
   min-width: 45px;
-} /* L# */
+}
 #fileTable th:nth-child(2),
 #fileTable td:nth-child(2) {
   width: 17%;
-} /* NSR */
+}
 #fileTable th:nth-child(3),
 #fileTable td:nth-child(3) {
-  width: 17%;
-} /* CÓD. EVENTO */
+  width: 18%;
+}
 #fileTable th:nth-child(4),
 #fileTable td:nth-child(4) {
-  width: 17%;
-} /* Data */
+  width: 16%;
+}
 #fileTable th:nth-child(5),
 #fileTable td:nth-child(5) {
   width: 10%;
-} /* Hora */
+}
 #fileTable th:nth-child(6),
 #fileTable td:nth-child(6) {
   width: 24%;
-} /* PIS */
+}
 #fileTable th:nth-child(7),
 #fileTable td:nth-child(7) {
   width: 10%;
-} /* CRC */
+}
 
 #fileTable th {
   color: var(--primary-text-color);
@@ -564,7 +580,6 @@ a#downloadButton:hover {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--accent-color);
-  /* background-color: var(--table-header-bg); /* Movido para thead */
 }
 #fileTable th:first-child .sortable-header-text {
   justify-content: flex-start;
@@ -574,8 +589,7 @@ a#downloadButton:hover {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  padding-top: 2px; /* Ajusta o texto do cabeçalho um pouco para baixo */
-  padding-bottom: 2px;
+  padding: 2px 0;
   transition: color 0.2s ease;
   font-weight: 600;
 }
@@ -618,10 +632,9 @@ a#downloadButton:hover {
 }
 
 #fileTable th div {
-  /* Wrapper para input e botão de busca */
   display: flex;
   align-items: center;
-  margin-top: 6px; /* Reduzido espaço */
+  margin-top: 8px;
   gap: 5px;
 }
 
