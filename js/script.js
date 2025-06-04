@@ -2,8 +2,14 @@
 var fileInput = document.getElementById("fileInput");
 var fileTableBody = document.querySelector("#fileTable tbody");
 var removeButton = document.getElementById("removeButton");
-var searchInputs = document.querySelectorAll(".search-input");
+var searchNSRInput = document.getElementById("searchNSR");
+var searchCodigoEventoInput = document.getElementById("searchCodigoEvento");
+var searchDataInput = document.getElementById("searchData");
+var searchHoraInput = document.getElementById("searchHora");
+var searchPISInput = document.getElementById("searchPIS");
+var allSearchInputs = document.querySelectorAll(".search-input");
 var searchButtons = document.querySelectorAll(".search-button");
+
 var clearButton = document.getElementById("clearButton");
 var themeSwitcherButton = document.getElementById("themeSwitcherButton");
 var fileNameDisplay = document.getElementById("fileNameDisplay");
@@ -22,7 +28,7 @@ var tableHeaders = document.querySelectorAll(
 
 var fileSummarySection = document.getElementById("fileSummarySection");
 var fileSummaryContent = document.getElementById("fileSummaryContent");
-var toggleSummaryButton = document.getElementById("toggleSummaryButton"); // Botão para minimizar/expandir
+var toggleSummaryButton = document.getElementById("toggleSummaryButton");
 var paginationControls = document.getElementById("paginationControls");
 var prevPageButton = document.getElementById("prevPageButton");
 var nextPageButton = document.getElementById("nextPageButton");
@@ -39,7 +45,7 @@ var rowsPerPage = 50;
 
 var currentSortColumn = null;
 var currentSortDirection = "asc";
-let loadingStartTime = 0;
+let loadingStartTime = 0; // Renomeado para evitar conflito com loadingTimeoutId se existir
 
 /**
  * Valida um número de PIS/PASEP/NIS.
@@ -200,12 +206,10 @@ function renderPaginationControls(totalItems, currentPageNum, itemsPerPage) {
 
 function calculateAndDisplaySummary(allRowsFromFile) {
   if (!fileSummarySection || !fileSummaryContent) return;
-
   if (!allRowsFromFile || allRowsFromFile.length === 0) {
     fileSummarySection.style.display = "none";
     return;
   }
-
   var totalRegistros = allRowsFromFile.length;
   const pisCandidatos = [];
   allRowsFromFile.forEach((row) => {
@@ -279,8 +283,7 @@ function calculateAndDisplaySummary(allRowsFromFile) {
         <div><strong>Contagem por Código de Evento:</strong>${eventosHtml}</div>
     `;
   fileSummarySection.style.display = "block";
-  // Garante que o conteúdo do resumo esteja visível por padrão ao carregar dados
-  fileSummaryContent.classList.remove("collapsed");
+  if (fileSummaryContent) fileSummaryContent.classList.remove("collapsed");
   if (toggleSummaryButton) {
     toggleSummaryButton.textContent = "➖";
     toggleSummaryButton.title = "Minimizar Resumo";
@@ -760,19 +763,32 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   var savedTheme = localStorage.getItem("theme");
-  if (savedTheme === "light") {
+  // Aplica tema do sistema se nenhum tema salvo ou se é a primeira vez
+  if (
+    !savedTheme &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: light)").matches
+  ) {
+    document.body.classList.add("theme-light");
+    if (themeSwitcherButton) {
+      themeSwitcherButton.textContent = "☀️";
+      themeSwitcherButton.title = "Alternar para Tema Escuro";
+    }
+  } else if (savedTheme === "light") {
     document.body.classList.add("theme-light");
     if (themeSwitcherButton) {
       themeSwitcherButton.textContent = "☀️";
       themeSwitcherButton.title = "Alternar para Tema Escuro";
     }
   } else {
+    // Padrão para escuro se não houver preferência do sistema para claro ou se salvo como escuro
     document.body.classList.remove("theme-light");
     if (themeSwitcherButton) {
       themeSwitcherButton.textContent = "🌙";
       themeSwitcherButton.title = "Alternar para Tema Claro";
     }
   }
+
   if (rowsPerPageSelect) {
     let initialRowsPerPage = rowsPerPageSelect.value;
     rowsPerPage =
@@ -796,7 +812,7 @@ if (themeSwitcherButton) {
   themeSwitcherButton.addEventListener("click", function () {
     document.body.classList.toggle("theme-light");
     var isLightTheme = document.body.classList.contains("theme-light");
-    localStorage.setItem("theme", isLightTheme ? "light" : "dark");
+    localStorage.setItem("theme", isLightTheme ? "light" : "dark"); // Salva a escolha manual
     themeSwitcherButton.textContent = isLightTheme ? "☀️" : "🌙";
     themeSwitcherButton.title = isLightTheme
       ? "Alternar para Tema Escuro"
@@ -881,17 +897,17 @@ if (closeValidationErrorsButton) {
   });
 }
 
-// Event listener para o botão de minimizar/expandir resumo
 if (toggleSummaryButton && fileSummaryContent) {
   toggleSummaryButton.addEventListener("click", function () {
     fileSummaryContent.classList.toggle("collapsed");
     if (fileSummaryContent.classList.contains("collapsed")) {
-      this.textContent = "➕";
+      this.textContent = "➕"; // Expandir
       this.title = "Expandir Resumo";
     } else {
-      this.textContent = "➖";
+      this.textContent = "➖"; // Minimizar
       this.title = "Minimizar Resumo";
     }
+    updateBodyHeight(); // Reajusta altura após colapsar/expandir
   });
 }
 

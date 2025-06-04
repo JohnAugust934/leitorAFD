@@ -1,4 +1,4 @@
-const CACHE_NAME = "leitor-afd-pwa-cache-v2.2.5"; // Versão incrementada!
+const CACHE_NAME = "leitor-afd-pwa-cache-v2.2.6"; // Versão incrementada!
 const urlsToCache = [
   "/",
   "index.html",
