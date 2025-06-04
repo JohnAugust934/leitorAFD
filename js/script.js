@@ -45,7 +45,10 @@ var rowsPerPage = 50;
 
 var currentSortColumn = null;
 var currentSortDirection = "asc";
-let loadingStartTime = 0; // Renomeado para evitar conflito com loadingTimeoutId se existir
+let loadingStartTime = 0;
+
+// Estado do tema: 'light', 'dark', 'system'
+let currentThemeSetting = "system"; // Padrão inicial
 
 /**
  * Valida um número de PIS/PASEP/NIS.
@@ -565,6 +568,79 @@ function setupInputValidation() {
   }
 }
 
+/**
+ * Aplica o tema visual (claro/escuro) e atualiza o botão.
+ * @param {string} visualTheme - 'light' ou 'dark'.
+ */
+function applyVisualTheme(visualTheme) {
+  if (visualTheme === "light") {
+    document.body.classList.add("theme-light");
+  } else {
+    document.body.classList.remove("theme-light");
+  }
+  // Atualiza o ícone do botão com base no tema visual aplicado, não no currentThemeSetting
+  if (themeSwitcherButton) {
+    if (document.body.classList.contains("theme-light")) {
+      themeSwitcherButton.textContent = "☀️";
+      themeSwitcherButton.title = "Alternar para Tema Escuro";
+    } else {
+      themeSwitcherButton.textContent = "🌙";
+      themeSwitcherButton.title = "Alternar para Tema Claro";
+    }
+    // Se a configuração for 'system', o title pode ser mais específico
+    if (currentThemeSetting === "system") {
+      themeSwitcherButton.title = `Tema do Sistema (${
+        document.body.classList.contains("theme-light") ? "Claro" : "Escuro"
+      }) - Clique para tema Claro`;
+    }
+  }
+}
+
+/**
+ * Define o tema da aplicação com base na configuração e preferência do sistema.
+ * @param {string} setting - 'light', 'dark', ou 'system'.
+ */
+function setTheme(setting) {
+  currentThemeSetting = setting; // Atualiza a configuração atual
+  localStorage.setItem("theme", setting); // Salva a configuração
+
+  if (setting === "system") {
+    applyVisualTheme(
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+    );
+    if (themeSwitcherButton) themeSwitcherButton.textContent = "💻"; // Ícone para "Sistema"
+    // O title será atualizado em applyVisualTheme, mas podemos refinar aqui
+    themeSwitcherButton.title = `Tema do Sistema (${
+      document.body.classList.contains("theme-light") ? "Claro" : "Escuro"
+    }) - Clique para tema Claro`;
+  } else {
+    // 'light' ou 'dark'
+    applyVisualTheme(setting);
+  }
+}
+
+/**
+ * Lida com a mudança de preferência de tema do sistema.
+ */
+function handleSystemThemeChange() {
+  // Só muda o tema visual se a configuração atual for 'system'
+  if (currentThemeSetting === "system") {
+    applyVisualTheme(
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+    );
+    if (themeSwitcherButton) {
+      // Atualiza o title do botão do sistema
+      themeSwitcherButton.title = `Tema do Sistema (${
+        document.body.classList.contains("theme-light") ? "Claro" : "Escuro"
+      }) - Clique para tema Claro`;
+    }
+  }
+}
+
 // --- Event Listeners ---
 
 if (fileInput) {
@@ -762,32 +838,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  var savedTheme = localStorage.getItem("theme");
-  // Aplica tema do sistema se nenhum tema salvo ou se é a primeira vez
-  if (
-    !savedTheme &&
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: light)").matches
-  ) {
-    document.body.classList.add("theme-light");
-    if (themeSwitcherButton) {
-      themeSwitcherButton.textContent = "☀️";
-      themeSwitcherButton.title = "Alternar para Tema Escuro";
-    }
-  } else if (savedTheme === "light") {
-    document.body.classList.add("theme-light");
-    if (themeSwitcherButton) {
-      themeSwitcherButton.textContent = "☀️";
-      themeSwitcherButton.title = "Alternar para Tema Escuro";
-    }
+  // Lógica de Tema Inicial
+  const savedThemeSetting = localStorage.getItem("theme");
+  const prefersDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+  if (savedThemeSetting) {
+    setTheme(savedThemeSetting);
   } else {
-    // Padrão para escuro se não houver preferência do sistema para claro ou se salvo como escuro
-    document.body.classList.remove("theme-light");
-    if (themeSwitcherButton) {
-      themeSwitcherButton.textContent = "🌙";
-      themeSwitcherButton.title = "Alternar para Tema Claro";
-    }
+    setTheme("system"); // Padrão para 'system' se nada salvo
   }
+  // Ouve mudanças no tema do sistema
+  prefersDarkQuery.addEventListener("change", handleSystemThemeChange);
 
   if (rowsPerPageSelect) {
     let initialRowsPerPage = rowsPerPageSelect.value;
@@ -810,13 +871,15 @@ if (clearButton) {
 
 if (themeSwitcherButton) {
   themeSwitcherButton.addEventListener("click", function () {
-    document.body.classList.toggle("theme-light");
-    var isLightTheme = document.body.classList.contains("theme-light");
-    localStorage.setItem("theme", isLightTheme ? "light" : "dark"); // Salva a escolha manual
-    themeSwitcherButton.textContent = isLightTheme ? "☀️" : "🌙";
-    themeSwitcherButton.title = isLightTheme
-      ? "Alternar para Tema Escuro"
-      : "Alternar para Tema Claro";
+    // Cicla: system -> light -> dark -> system ...
+    if (currentThemeSetting === "system") {
+      setTheme("light");
+    } else if (currentThemeSetting === "light") {
+      setTheme("dark");
+    } else {
+      // currentThemeSetting === 'dark'
+      setTheme("system");
+    }
   });
 }
 
@@ -901,13 +964,13 @@ if (toggleSummaryButton && fileSummaryContent) {
   toggleSummaryButton.addEventListener("click", function () {
     fileSummaryContent.classList.toggle("collapsed");
     if (fileSummaryContent.classList.contains("collapsed")) {
-      this.textContent = "➕"; // Expandir
+      this.textContent = "➕";
       this.title = "Expandir Resumo";
     } else {
-      this.textContent = "➖"; // Minimizar
+      this.textContent = "➖";
       this.title = "Minimizar Resumo";
     }
-    updateBodyHeight(); // Reajusta altura após colapsar/expandir
+    setTimeout(updateBodyHeight, 410);
   });
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "leitor-afd-pwa-cache-v2.2.6"; // Versão incrementada!
+const CACHE_NAME = "leitor-afd-pwa-cache-v2.2.8"; // Versão incrementada!
 const urlsToCache = [
   "/",
   "index.html",
@@ -18,7 +18,7 @@ const urlsToCache = [
   "icons/favicon.ico",
 ];
 
-// Evento de Instalação: (Restante do código do service worker permanece o mesmo da Parte 2)
+// Evento de Instalação:
 self.addEventListener("install", function (event) {
   console.log("[ServiceWorker] Instalando v" + CACHE_NAME);
   event.waitUntil(
