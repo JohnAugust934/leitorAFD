@@ -22,9 +22,9 @@
   --scrollbar-thumb-color: #444c56;
   --scrollbar-thumb-hover-color: #555e6a;
   --font-family-default: "Montserrat", sans-serif;
-  --table-header-bg: var(
-    --bg-color
-  ); /* Cor de fundo para o cabeçalho da tabela quando sticky */
+  --table-header-bg: #373e47; /* Cor de fundo para o cabeçalho sticky */
+  --input-invalid-border-color: var(--danger-color);
+  --input-invalid-shadow-color: rgba(248, 81, 73, 0.4);
 }
 
 /* Tema Claro */
@@ -47,7 +47,9 @@ body.theme-light {
   --scrollbar-track-color: #f0f0f0;
   --scrollbar-thumb-color: #bdc3c7;
   --scrollbar-thumb-hover-color: #95a5a6;
-  --table-header-bg: #e9ecef; /* Cor de fundo para o cabeçalho da tabela no tema claro */
+  --table-header-bg: #e9ecef; /* Cor de fundo para o cabeçalho sticky no tema claro */
+  --input-invalid-border-color: var(--danger-color);
+  --input-invalid-shadow-color: rgba(209, 36, 47, 0.3);
 }
 
 /* PADRÕES */
@@ -407,25 +409,63 @@ a#downloadButton:hover {
 .file-summary-section {
   width: 100%;
   background-color: var(--surface-bg-color);
-  padding: 20px;
+  padding: 15px 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-bottom: 20px;
+}
+.file-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
 }
 .file-summary-section h2 {
   font-size: 1.3em;
   font-weight: 600;
   color: var(--primary-text-color);
-  margin-bottom: 15px;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 10px;
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
 }
+.toggle-summary-button {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--primary-text-color);
+  font-size: 1.2em;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 0;
+  min-width: 30px;
+  text-align: center;
+}
+.toggle-summary-button:hover {
+  background-color: var(--border-color);
+}
+
 .file-summary-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 15px;
   font-size: 0.9em;
+  max-height: 500px;
+  overflow: hidden;
+  transition: max-height 0.4s ease-in-out, padding 0.4s ease-in-out,
+    margin 0.4s ease-in-out;
+  padding-top: 10px;
 }
+.file-summary-content.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  overflow: hidden;
+}
+
 .file-summary-content p {
   margin-bottom: 8px;
 }
@@ -449,43 +489,58 @@ a#downloadButton:hover {
   font-weight: bold;
 }
 
-/* TABELA */
+/* TABELA E CABEÇALHO STICKY */
+.table-container {
+  width: 100%;
+  overflow-y: auto;
+  max-height: 70vh;
+  border-radius: 8px;
+  /* background-color: var(--surface-bg-color); /* Removido para não conflitar com o sticky header da tabela */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 20px;
+  border: 1px solid var(--border-color); /* Adiciona borda ao container da tabela */
+}
+
 #fileTable {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 0;
-  background-color: var(--surface-bg-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  table-layout: fixed;
+  /* table-layout: fixed; /* Comentado para permitir que as colunas se ajustem melhor */
+}
+
+#fileTable thead {
+  position: -webkit-sticky; /* Para Safari */
+  position: sticky;
+  top: -1px; /* Ajuste fino para evitar que a borda do container cubra a borda do thead */
+  z-index: 10;
+  background-color: var(--table-header-bg);
 }
 
 #fileTable th,
 #fileTable td {
-  padding: 10px 8px; /* Ajustado padding */
+  padding: 10px 8px;
   text-align: left;
   border-bottom: 1px solid var(--border-color);
   white-space: normal;
   word-break: break-word;
   font-size: 0.85em;
   font-family: var(--font-family-default);
-  vertical-align: middle; /* Alinha o conteúdo do th e td verticalmente ao meio */
+  vertical-align: top;
 }
 
 /* Ajustando larguras das colunas */
 #fileTable th:nth-child(1),
 #fileTable td:nth-child(1) {
-  width: 6%;
-} /* Linhas */
+  width: 5%;
+  min-width: 45px;
+} /* L# */
 #fileTable th:nth-child(2),
 #fileTable td:nth-child(2) {
   width: 17%;
 } /* NSR */
 #fileTable th:nth-child(3),
 #fileTable td:nth-child(3) {
-  width: 18%;
-} /* Código Evento - Aumentado */
+  width: 17%;
+} /* CÓD. EVENTO */
 #fileTable th:nth-child(4),
 #fileTable td:nth-child(4) {
   width: 17%;
@@ -496,35 +551,31 @@ a#downloadButton:hover {
 } /* Hora */
 #fileTable th:nth-child(6),
 #fileTable td:nth-child(6) {
-  width: 22%;
+  width: 24%;
 } /* PIS */
 #fileTable th:nth-child(7),
 #fileTable td:nth-child(7) {
   width: 10%;
 } /* CRC */
 
-#fileTable thead tr {
-  /* Para garantir que o fundo do cabeçalho cubra a área */
-  background-color: var(--table-header-bg); /* Usa a variável de cor do tema */
-}
-
 #fileTable th {
-  background-color: inherit; /* Herda do thead tr */
   color: var(--primary-text-color);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--accent-color);
-  position: sticky;
-  top: 0; /* Necessário para sticky */
-  z-index: 10; /* Para ficar acima do conteúdo da tabela ao rolar */
+  /* background-color: var(--table-header-bg); /* Movido para thead */
+}
+#fileTable th:first-child .sortable-header-text {
+  justify-content: flex-start;
 }
 
 .sortable-header-text {
   cursor: pointer;
   display: inline-flex;
-  align-items: center; /* Alinha verticalmente o texto e o indicador */
-  padding: 2px 0;
+  align-items: center;
+  padding-top: 2px; /* Ajusta o texto do cabeçalho um pouco para baixo */
+  padding-bottom: 2px;
   transition: color 0.2s ease;
   font-weight: 600;
 }
@@ -545,9 +596,7 @@ a#downloadButton:hover {
   color: white !important;
 }
 #fileTable th.searching-column {
-  background-color: var(
-    --accent-color
-  ) !important; /* Garante que o fundo do TH mude */
+  background-color: var(--accent-color) !important;
 }
 
 #fileTable th .sort-indicator {
@@ -571,8 +620,8 @@ a#downloadButton:hover {
 #fileTable th div {
   /* Wrapper para input e botão de busca */
   display: flex;
-  align-items: center; /* Alinha input e botão de lupa verticalmente */
-  margin-top: 8px;
+  align-items: center;
+  margin-top: 6px; /* Reduzido espaço */
   gap: 5px;
 }
 
@@ -580,7 +629,7 @@ a#downloadButton:hover {
   flex-grow: 1;
   padding: 7px 8px;
   border: 1px solid var(--border-color);
-  background-color: var(--bg-color); /* Para contraste com o fundo do th */
+  background-color: var(--bg-color);
   color: var(--primary-text-color);
   border-radius: 4px;
   font-size: 0.85em;
@@ -592,10 +641,15 @@ a#downloadButton:hover {
   color: var(--secondary-text-color);
   opacity: 0.7;
 }
-#fileTable input[type="text"].search-input:focus {
+#fileTable input[type="text"].search-input:focus,
+#fileTable input[type="text"].search-input.input-invalid:focus {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px var(--accent-color-transparent, rgba(88, 166, 255, 0.3));
+}
+#fileTable input[type="text"].search-input.input-invalid {
+  border-color: var(--input-invalid-border-color) !important;
+  box-shadow: 0 0 0 2px var(--input-invalid-shadow-color) !important;
 }
 
 #fileTable button.search-button {
@@ -609,16 +663,16 @@ a#downloadButton:hover {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  border: 1px solid var(--accent-color);
+  border: none;
 }
 #fileTable button.search-button svg {
   width: 16px;
   height: 16px;
   stroke: white;
+  stroke-width: 2.5;
 }
 #fileTable button.search-button:hover {
   background-color: var(--accent-hover-color);
-  border-color: var(--accent-hover-color);
 }
 
 #fileTable tr:last-child td {

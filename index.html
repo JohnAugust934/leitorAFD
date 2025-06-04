@@ -35,7 +35,7 @@
                 <h1>Leitor AFD</h1>
                 <span class="design-by">Design by: <a href="http://johnaugust934.com.br" target="_blank"
                         rel="noopener noreferrer">João Augusto</a></span>
-                <span class="app-version">v2.2.4 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
+                <span class="app-version">v2.2.5 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
             </div>
             <button id="themeSwitcherButton" class="theme-switcher" title="Alternar Tema">🌙</button>
         </header>
@@ -68,24 +68,28 @@
         </div>
 
         <div id="fileSummarySection" class="file-summary-section" style="display: none;">
-            <h2>Resumo do Arquivo AFD</h2>
+            <div class="file-summary-header"> <!-- Novo wrapper para título e botão -->
+                <h2>Resumo do Arquivo AFD</h2>
+                <button id="toggleSummaryButton" class="toggle-summary-button" title="Minimizar Resumo">➖</button>
+            </div>
             <div id="fileSummaryContent" class="file-summary-content">
                 <!-- O conteúdo do resumo será inserido aqui pelo JavaScript -->
             </div>
         </div>
 
-        <div class="table-container"> <!-- Wrapper para a tabela para controlar o sticky header -->
+        <div class="table-container">
             <table id="fileTable">
                 <thead>
                     <tr>
                         <th data-sortable="true" data-column-key="originalLineNumber">
                             <span class="sortable-header-text">L#: <span class="sort-indicator"></span></span>
-                            <!-- "LINHAS:" abreviado para "L#" -->
                         </th>
                         <th data-sortable="true" data-column-key="nsr">
                             <span class="sortable-header-text">NSR: <span class="sort-indicator"></span></span>
                             <div>
-                                <input class="search-input" type="text" placeholder="Buscar NSR" maxlength="9">
+                                <input class="search-input" id="searchNSR" type="text" placeholder="Só números (9 dig.)"
+                                    maxlength="9" inputmode="numeric" pattern="\d*"
+                                    title="Apenas números, até 9 dígitos.">
                                 <button class="search-button" title="Pesquisar NSR">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -98,9 +102,10 @@
                         </th>
                         <th data-sortable="true" data-column-key="codigoEvento">
                             <span class="sortable-header-text">CÓD. EVENTO: <span class="sort-indicator"></span></span>
-                            <!-- Abreviação -->
                             <div>
-                                <input class="search-input" type="text" placeholder="Buscar Código" maxlength="1">
+                                <input class="search-input" id="searchCodigoEvento" type="text" placeholder="0,2-6"
+                                    maxlength="1" inputmode="numeric" pattern="[023456]"
+                                    title="Apenas um dos seguintes números: 0, 2, 3, 4, 5, 6.">
                                 <button class="search-button" title="Pesquisar Código do Evento">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -114,7 +119,8 @@
                         <th data-sortable="true" data-column-key="data">
                             <span class="sortable-header-text">DATA: <span class="sort-indicator"></span></span>
                             <div>
-                                <input class="search-input" type="text" placeholder="Buscar Data" maxlength="10">
+                                <input class="search-input" id="searchData" type="text" placeholder="DD/MM/AAAA"
+                                    maxlength="10" title="Formato DD/MM/AAAA. Ex: 25/12/2023">
                                 <button class="search-button" title="Pesquisar Data">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -128,7 +134,8 @@
                         <th data-sortable="true" data-column-key="hora">
                             <span class="sortable-header-text">HORA: <span class="sort-indicator"></span></span>
                             <div>
-                                <input class="search-input" type="text" placeholder="Buscar Hora" maxlength="5">
+                                <input class="search-input" id="searchHora" type="text" placeholder="HH:MM"
+                                    maxlength="5" title="Formato HH:MM. Ex: 14:30">
                                 <button class="search-button" title="Pesquisar Hora">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -142,7 +149,9 @@
                         <th data-sortable="true" data-column-key="pis">
                             <span class="sortable-header-text">PIS: <span class="sort-indicator"></span></span>
                             <div>
-                                <input class="search-input" type="text" placeholder="Buscar PIS" maxlength="12">
+                                <input class="search-input" id="searchPIS" type="text"
+                                    placeholder="Só números (12 dig.)" maxlength="12" inputmode="numeric"
+                                    pattern="\d{12}" title="Apenas números, exatamente 12 dígitos.">
                                 <button class="search-button" title="Pesquisar PIS">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
