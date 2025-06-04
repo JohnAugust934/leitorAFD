@@ -2,15 +2,33 @@
 var fileInput = document.getElementById("fileInput");
 var fileTableBody = document.querySelector("#fileTable tbody");
 var removeButton = document.getElementById("removeButton");
-var searchInputs = document.querySelectorAll(".search-input");
+var searchNSRInput = document.getElementById("searchNSR");
+var searchCodigoEventoInput = document.getElementById("searchCodigoEvento");
+var searchDataInput = document.getElementById("searchData");
+var searchHoraInput = document.getElementById("searchHora");
+var searchPISInput = document.getElementById("searchPIS");
+var allSearchInputs = document.querySelectorAll(".search-input");
 var searchButtons = document.querySelectorAll(".search-button");
+
 var clearButton = document.getElementById("clearButton");
 var themeSwitcherButton = document.getElementById("themeSwitcherButton");
 var fileNameDisplay = document.getElementById("fileNameDisplay");
 var scrollTopBottomButton = document.getElementById("scrollTopBottomButton");
+var loadingOverlay = document.getElementById("loadingOverlay");
+var validationErrorsSection = document.getElementById(
+  "validationErrorsSection"
+);
+var validationErrorsList = document.getElementById("validationErrorsList");
+var closeValidationErrorsButton = document.getElementById(
+  "closeValidationErrorsButton"
+);
+var tableHeaders = document.querySelectorAll(
+  '#fileTable th[data-sortable="true"]'
+);
 
 var fileSummarySection = document.getElementById("fileSummarySection");
 var fileSummaryContent = document.getElementById("fileSummaryContent");
+var toggleSummaryButton = document.getElementById("toggleSummaryButton");
 var paginationControls = document.getElementById("paginationControls");
 var prevPageButton = document.getElementById("prevPageButton");
 var nextPageButton = document.getElementById("nextPageButton");
@@ -19,11 +37,15 @@ var rowsPerPageSelect = document.getElementById("rowsPerPageSelect");
 var totalRowsInfo = document.getElementById("totalRowsInfo");
 
 var dataRows = [];
-var filteredDataRows = [];
+var filteredAndSortedRows = [];
 var originalRowCount = 0;
 var isScrolledToBottom = false;
 var currentPage = 1;
 var rowsPerPage = 50;
+
+var currentSortColumn = null;
+var currentSortDirection = "asc";
+let loadingStartTime = 0; // Renomeado para evitar conflito com loadingTimeoutId se existir
 
 /**
  * Valida um número de PIS/PASEP/NIS.
@@ -31,14 +53,11 @@ var rowsPerPage = 50;
  * @returns {boolean} - True se o PIS for válido, false caso contrário.
  */
 function validarPISChecksum(pisNumeros) {
-  if (/^(.)\1+$/.test(pisNumeros)) {
-    return false;
-  }
+  if (/^(.)\1+$/.test(pisNumeros)) return false;
   const multiplicadores = [3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   let soma = 0;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 10; i++)
     soma += parseInt(pisNumeros.charAt(i), 10) * multiplicadores[i];
-  }
   let resto = soma % 11;
   let digitoVerificadorCalculado = resto < 2 ? 0 : 11 - resto;
   let digitoVerificadorFornecido = parseInt(pisNumeros.charAt(10), 10);
@@ -57,11 +76,47 @@ function updateBodyHeight() {
   }
 }
 
-function displayFileContents(rowsToDisplay, page, perPage) {
-  if (!fileTableBody) {
-    console.error("Elemento fileTableBody não encontrado.");
-    return;
+function toggleLoadingOverlay(show) {
+  if (loadingOverlay) {
+    if (show) {
+      loadingOverlay.classList.add("show");
+    } else {
+      loadingOverlay.classList.remove("show");
+    }
   }
+}
+
+function displayValidationErrors(errors) {
+  if (!validationErrorsSection || !validationErrorsList) return;
+  if (errors && errors.length > 0) {
+    validationErrorsList.innerHTML = "";
+    errors.forEach((err) => {
+      const li = document.createElement("li");
+      li.innerHTML = `Linha ${err.lineNumber}: Campo "<strong>${escapeHtml(
+        err.field
+      )}</strong>" (valor: <code>${escapeHtml(
+        String(err.value)
+      )}</code>) - ${escapeHtml(err.error)}`;
+      validationErrorsList.appendChild(li);
+    });
+    validationErrorsSection.style.display = "block";
+  } else {
+    validationErrorsSection.style.display = "none";
+  }
+}
+
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== "string") return String(unsafe);
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function displayFileContents(rowsToDisplay, page, perPage) {
+  if (!fileTableBody) return;
   fileTableBody.innerHTML = "";
   var fragment = document.createDocumentFragment();
 
@@ -71,46 +126,29 @@ function displayFileContents(rowsToDisplay, page, perPage) {
     td.colSpan = 7;
     td.textContent =
       dataRows.length > 0
-        ? "Nenhum resultado encontrado para os filtros aplicados."
+        ? "Nenhum resultado para os filtros aplicados."
         : "Nenhum dado para exibir. Carregue um arquivo AFD.";
     td.style.textAlign = "center";
     td.style.padding = "20px";
     tr.appendChild(td);
     fragment.appendChild(tr);
     toggleScrollButtonVisibility(false);
-    renderPaginationControls(0, 1, perPage); // Chama para esconder ou mostrar apenas o select
+    renderPaginationControls(0, 1, perPage);
   } else {
     let paginatedItems;
     let start = 0;
-
     if (perPage === "all") {
       paginatedItems = rowsToDisplay;
-      start = 0;
     } else {
       start = (page - 1) * perPage;
       var end = start + perPage;
       paginatedItems = rowsToDisplay.slice(start, end);
     }
-
-    paginatedItems.forEach(function (row, indexInPage) {
+    paginatedItems.forEach(function (row) {
       var tr = document.createElement("tr");
       var rowNumberCell = document.createElement("td");
-      let originalIndex = -1;
-      if (rowsToDisplay === dataRows) {
-        originalIndex = start + indexInPage;
-      } else {
-        const paginatedRowData = paginatedItems[indexInPage];
-        originalIndex = dataRows.findIndex(
-          (dr) =>
-            dr.nsr === paginatedRowData.nsr &&
-            dr.pis === paginatedRowData.pis &&
-            dr.data === paginatedRowData.data &&
-            dr.hora === paginatedRowData.hora &&
-            dr.codigoEvento === paginatedRowData.codigoEvento
-        );
-      }
       rowNumberCell.textContent =
-        originalIndex !== -1 ? originalIndex + 1 : start + indexInPage + 1;
+        row.originalLineNumber || dataRows.indexOf(row) + 1;
       tr.appendChild(rowNumberCell);
       ["nsr", "codigoEvento", "data", "hora", "pis", "crc"].forEach(function (
         key
@@ -129,12 +167,6 @@ function displayFileContents(rowsToDisplay, page, perPage) {
   updateBodyHeight();
 }
 
-/**
- * Renderiza os controles de paginação.
- * @param {number} totalItems - Total de itens a serem paginados (no array filtrado/atual).
- * @param {number} currentPageNum - Número da página atual.
- * @param {number|string} itemsPerPage - Itens por página ou "all".
- */
 function renderPaginationControls(totalItems, currentPageNum, itemsPerPage) {
   if (
     !paginationControls ||
@@ -145,18 +177,16 @@ function renderPaginationControls(totalItems, currentPageNum, itemsPerPage) {
     !rowsPerPageSelect
   )
     return;
-
-  if (totalItems === 0) {
+  if (totalItems === 0 && itemsPerPage !== "all") {
     paginationControls.style.display = "none";
     return;
   }
-  paginationControls.style.display = "flex"; // Garante que a div principal esteja visível
-
+  paginationControls.style.display = "flex";
   if (itemsPerPage === "all") {
     pageInfo.style.display = "none";
     prevPageButton.style.display = "none";
     nextPageButton.style.display = "none";
-    rowsPerPageSelect.style.display = "inline-block"; // Mantém o select visível
+    rowsPerPageSelect.style.display = "inline-block";
     totalRowsInfo.textContent = `Exibindo todos os ${totalItems} registros.`;
     totalRowsInfo.style.display = "inline";
   } else {
@@ -165,13 +195,10 @@ function renderPaginationControls(totalItems, currentPageNum, itemsPerPage) {
     nextPageButton.style.display = "inline-block";
     rowsPerPageSelect.style.display = "inline-block";
     totalRowsInfo.style.display = "inline";
-
     var totalPages = Math.ceil(totalItems / itemsPerPage);
     if (totalPages <= 0) totalPages = 1;
-
     pageInfo.textContent = `Página ${currentPageNum} de ${totalPages}`;
     totalRowsInfo.textContent = `Total de registros: ${totalItems}`;
-
     prevPageButton.disabled = currentPageNum === 1;
     nextPageButton.disabled = currentPageNum === totalPages;
   }
@@ -179,14 +206,11 @@ function renderPaginationControls(totalItems, currentPageNum, itemsPerPage) {
 
 function calculateAndDisplaySummary(allRowsFromFile) {
   if (!fileSummarySection || !fileSummaryContent) return;
-
   if (!allRowsFromFile || allRowsFromFile.length === 0) {
     fileSummarySection.style.display = "none";
     return;
   }
-
   var totalRegistros = allRowsFromFile.length;
-
   const pisCandidatos = [];
   allRowsFromFile.forEach((row) => {
     if (row.pis && typeof row.pis === "string") {
@@ -196,12 +220,10 @@ function calculateAndDisplaySummary(allRowsFromFile) {
       }
     }
   });
-
   const pisUnicosSet = new Set(pisCandidatos);
   var totalPisUnicosFormatados = pisUnicosSet.size;
   var pisValidos = 0;
   var pisInvalidos = 0;
-
   pisUnicosSet.forEach((pisNumerico) => {
     if (validarPISChecksum(pisNumerico)) {
       pisValidos++;
@@ -209,11 +231,9 @@ function calculateAndDisplaySummary(allRowsFromFile) {
       pisInvalidos++;
     }
   });
-
   let rowsConsideredForPeriod = [];
   const skipStartLines = 10;
   const skipEndLines = 2;
-
   if (allRowsFromFile.length > skipStartLines + skipEndLines) {
     rowsConsideredForPeriod = allRowsFromFile.slice(
       skipStartLines,
@@ -222,25 +242,20 @@ function calculateAndDisplaySummary(allRowsFromFile) {
   } else {
     rowsConsideredForPeriod = [...allRowsFromFile];
   }
-
   if (rowsConsideredForPeriod.length === 0 && allRowsFromFile.length > 0) {
     rowsConsideredForPeriod = [...allRowsFromFile];
   }
-
   var datas = rowsConsideredForPeriod
     .map((row) => {
       if (row.data && typeof row.data === "string") {
         const parts = row.data.split("/");
-        if (parts.length === 3) {
-          return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
+        if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
       }
       return null;
     })
     .filter((date) => date !== null)
     .sort();
-
-  var periodo = "N/A (dados insuficientes ou inválidos para período)";
+  var periodo = "N/A";
   if (datas.length > 0) {
     const formatDateForDisplay = (dateStr) => {
       const [year, month, day] = dateStr.split("-");
@@ -250,7 +265,6 @@ function calculateAndDisplaySummary(allRowsFromFile) {
       datas[datas.length - 1]
     )}`;
   }
-
   var eventos = {};
   allRowsFromFile.forEach((row) => {
     eventos[row.codigoEvento] = (eventos[row.codigoEvento] || 0) + 1;
@@ -260,9 +274,8 @@ function calculateAndDisplaySummary(allRowsFromFile) {
     eventosHtml += `<li><strong>Código ${evento}:</strong> ${eventos[evento]} ocorrências</li>`;
   }
   eventosHtml += "</ul>";
-
   fileSummaryContent.innerHTML = `
-        <p><strong>Total de Registros no Arquivo:</strong> ${totalRegistros}</p>
+        <p><strong>Total de Registros Processados:</strong> ${totalRegistros}</p>
         <p><strong>Período Coberto (estimado):</strong> ${periodo}</p>
         <p><strong>Total de PIS Únicos (formato 11 dígitos):</strong> ${totalPisUnicosFormatados}</p>
         <p><strong>PIS Válidos (checksum OK):</strong> <span class="summary-valid">${pisValidos}</span></p>
@@ -270,13 +283,16 @@ function calculateAndDisplaySummary(allRowsFromFile) {
         <div><strong>Contagem por Código de Evento:</strong>${eventosHtml}</div>
     `;
   fileSummarySection.style.display = "block";
+  if (fileSummaryContent) fileSummaryContent.classList.remove("collapsed");
+  if (toggleSummaryButton) {
+    toggleSummaryButton.textContent = "➖";
+    toggleSummaryButton.title = "Minimizar Resumo";
+  }
 }
 
 function showAlert(message, type = "info") {
   var existingOverlay = document.querySelector(".alert-overlay");
-  if (existingOverlay) {
-    document.body.removeChild(existingOverlay);
-  }
+  if (existingOverlay) document.body.removeChild(existingOverlay);
   var overlay = document.createElement("div");
   overlay.className = "alert-overlay";
   var alertBox = document.createElement("div");
@@ -295,84 +311,93 @@ function showAlert(message, type = "info") {
   function closeAlert() {
     overlay.classList.remove("show");
     setTimeout(() => {
-      if (document.body.contains(overlay)) {
-        document.body.removeChild(overlay);
-      }
+      if (document.body.contains(overlay)) document.body.removeChild(overlay);
     }, 300);
   }
   closeButton.addEventListener("click", closeAlert);
-  overlay.addEventListener("click", function (event) {
-    if (event.target === overlay) {
-      closeAlert();
-    }
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeAlert();
   });
 }
 
 function clearSearchInputs() {
-  searchInputs.forEach(function (input) {
-    if (input) input.value = "";
+  allSearchInputs.forEach((input) => {
+    if (input) {
+      input.value = "";
+      input.classList.remove("input-invalid");
+    }
   });
+  tableHeaders.forEach((th) => th.classList.remove("searching-column"));
+}
+
+function applyCurrentFiltersAndSort() {
+  displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
 }
 
 function clearHighlightingAndFilters() {
-  filteredDataRows = [...dataRows];
+  filteredAndSortedRows = [...dataRows];
   currentPage = 1;
-  if (rowsPerPageSelect && rowsPerPageSelect.value !== "all") {
-    rowsPerPage = parseInt(rowsPerPageSelect.value) || 50;
-  } else if (rowsPerPageSelect && rowsPerPageSelect.value === "all") {
-    rowsPerPage = "all";
-  } else {
-    rowsPerPage = 50;
+  currentSortColumn = null;
+  currentSortDirection = "asc";
+  tableHeaders.forEach((th) => {
+    const sortableText = th.querySelector(".sortable-header-text");
+    if (sortableText) {
+      const indicator = sortableText.querySelector(".sort-indicator");
+      if (indicator) indicator.className = "sort-indicator";
+    }
+    th.classList.remove("searching-column");
+  });
+  if (rowsPerPageSelect) {
+    rowsPerPage =
+      rowsPerPageSelect.value === "all"
+        ? "all"
+        : parseInt(rowsPerPageSelect.value) || 50;
   }
-  displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+  displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+  clearSearchInputs();
 }
 
 function searchTable(columnIndex, inputValue) {
   if (!fileTableBody) return;
   var searchTerm = inputValue.trim().toLowerCase();
-
+  tableHeaders.forEach((th) => th.classList.remove("searching-column"));
+  var currentHeader = document.querySelector(
+    `#fileTable th:nth-child(${columnIndex + 1})`
+  );
   if (columnIndex === 6) {
     showAlert("A coluna CRC não é pesquisável.", "info");
     return;
   }
-
   if (searchTerm === "") {
-    clearHighlightingAndFilters();
+    if (currentHeader) currentHeader.classList.remove("searching-column");
+    filteredAndSortedRows = [...dataRows];
+    if (currentSortColumn)
+      sortData(currentSortColumn, currentSortDirection, false);
+    currentPage = 1;
+    displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
     return;
   }
-
-  filteredDataRows = dataRows.filter(function (row) {
+  if (currentHeader) currentHeader.classList.add("searching-column");
+  filteredAndSortedRows = dataRows.filter(function (row) {
     var keys = ["nsr", "codigoEvento", "data", "hora", "pis", "crc"];
     var keyIndex = columnIndex - 1;
-
     if (keyIndex >= 0 && keyIndex < keys.length) {
       var cellValue = String(row[keys[keyIndex]] || "").toLowerCase();
       return cellValue.includes(searchTerm);
     }
     return false;
   });
-
+  if (currentSortColumn)
+    sortData(currentSortColumn, currentSortDirection, false);
   currentPage = 1;
-  let currentRowsPerPageSetting = rowsPerPageSelect
-    ? rowsPerPageSelect.value
-    : rowsPerPage;
-  displayFileContents(
-    filteredDataRows,
-    currentPage,
-    currentRowsPerPageSetting === "all"
-      ? "all"
-      : parseInt(currentRowsPerPageSetting)
-  );
-
+  displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
   var tableRowsRendered = fileTableBody.getElementsByTagName("tr");
   var matchCount = 0;
-
   for (var i = 0; i < tableRowsRendered.length; i++) {
     var cell = tableRowsRendered[i].getElementsByTagName("td")[columnIndex];
     if (cell) {
       var cellText = cell.textContent || cell.innerText;
       var matchIndex = cellText.toLowerCase().indexOf(searchTerm);
-
       if (matchIndex > -1) {
         var originalMatchedText = cellText.substr(
           matchIndex,
@@ -389,31 +414,20 @@ function searchTable(columnIndex, inputValue) {
       }
     }
   }
-
-  if (matchCount > 0) {
-    showAlert(
-      matchCount + " correspondências encontradas nos resultados filtrados.",
-      "success"
-    );
-  } else {
-    showAlert(
-      'Nenhuma correspondência encontrada para "' + inputValue + '".',
-      "info"
-    );
-  }
+  if (matchCount === 0)
+    showAlert('Nenhuma correspondência para "' + inputValue + '".', "info");
 }
 
 function toggleScrollButtonVisibility(show) {
   if (scrollTopBottomButton) {
-    if (show && (filteredDataRows.length > 0 || dataRows.length > 0)) {
+    if (show && (filteredAndSortedRows.length > 0 || dataRows.length > 0)) {
       scrollTopBottomButton.style.display = "flex";
       setTimeout(() => scrollTopBottomButton.classList.add("visible"), 10);
     } else {
       scrollTopBottomButton.classList.remove("visible");
       setTimeout(() => {
-        if (!scrollTopBottomButton.classList.contains("visible")) {
+        if (!scrollTopBottomButton.classList.contains("visible"))
           scrollTopBottomButton.style.display = "none";
-        }
       }, 300);
     }
   }
@@ -422,15 +436,136 @@ function toggleScrollButtonVisibility(show) {
 function setScrollButtonState(atBottom) {
   isScrolledToBottom = atBottom;
   if (scrollTopBottomButton) {
-    if (isScrolledToBottom) {
-      scrollTopBottomButton.innerHTML = "⬆️";
-      scrollTopBottomButton.title = "Subir para o topo";
-    } else {
-      scrollTopBottomButton.innerHTML = "⬇️";
-      scrollTopBottomButton.title = "Descer até o final";
-    }
+    scrollTopBottomButton.innerHTML = isScrolledToBottom ? "⬆️" : "⬇️";
+    scrollTopBottomButton.title = isScrolledToBottom
+      ? "Subir para o topo"
+      : "Descer até o final";
   }
 }
+
+function sortData(columnKey, direction, toggleDirection = true) {
+  if (toggleDirection) {
+    currentSortDirection =
+      currentSortColumn === columnKey && currentSortDirection === "asc"
+        ? "desc"
+        : "asc";
+  } else {
+    currentSortDirection = direction;
+  }
+  currentSortColumn = columnKey;
+  tableHeaders.forEach((th) => {
+    const sortableText = th.querySelector(".sortable-header-text");
+    if (sortableText) {
+      const indicator = sortableText.querySelector(".sort-indicator");
+      if (indicator) {
+        indicator.className = "sort-indicator";
+        if (th.dataset.columnKey === columnKey)
+          indicator.classList.add(currentSortDirection);
+      }
+    }
+  });
+  filteredAndSortedRows.sort((a, b) => {
+    let valA = a[columnKey];
+    let valB = b[columnKey];
+    if (columnKey === "originalLineNumber") {
+      valA = parseInt(a.originalLineNumber) || 0;
+      valB = parseInt(b.originalLineNumber) || 0;
+    } else if (columnKey === "data") {
+      const partsA = String(valA || "").split("/");
+      const partsB = String(valB || "").split("/");
+      if (partsA.length === 3) valA = `${partsA[2]}-${partsA[1]}-${partsA[0]}`;
+      else valA = "";
+      if (partsB.length === 3) valB = `${partsB[2]}-${partsB[1]}-${partsB[0]}`;
+      else valB = "";
+    } else if (columnKey === "hora") {
+      valA = String(valA || "").replace(":", "");
+      valB = String(valB || "").replace(":", "");
+    } else if (["nsr", "pis", "codigoEvento", "crc"].includes(columnKey)) {
+      valA = String(valA || "").toLowerCase();
+      valB = String(valB || "").toLowerCase();
+    } else if (typeof valA === "string") {
+      valA = valA.toLowerCase();
+      valB = String(valB || "").toLowerCase();
+    }
+    if (valA < valB) return currentSortDirection === "asc" ? -1 : 1;
+    if (valA > valB) return currentSortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+}
+
+function setupInputValidation() {
+  if (searchNSRInput) {
+    searchNSRInput.addEventListener("input", function (e) {
+      this.value = this.value.replace(/[^\d]/g, "");
+      this.classList.toggle(
+        "input-invalid",
+        this.value.length > 0 && !/^\d*$/.test(this.value)
+      );
+    });
+  }
+  if (searchCodigoEventoInput) {
+    searchCodigoEventoInput.addEventListener("input", function (e) {
+      this.value = this.value.replace(/[^\d]/g, "");
+      const isValid = this.value.length === 0 || /^[023456]$/.test(this.value);
+      this.classList.toggle("input-invalid", !isValid && this.value.length > 0);
+    });
+  }
+  if (searchDataInput) {
+    searchDataInput.addEventListener("input", function (e) {
+      let v = this.value.replace(/[^\d]/g, "");
+      if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+      if (v.length > 5) v = v.slice(0, 5) + "/" + v.slice(5);
+      this.value = v.slice(0, 10);
+      const dateParts = this.value.split("/");
+      const isValidDate =
+        this.value.length === 0 ||
+        (this.value.length === 10 &&
+          dateParts.length === 3 &&
+          !isNaN(
+            Date.parse(dateParts[2] + "-" + dateParts[1] + "-" + dateParts[0])
+          ) &&
+          parseInt(dateParts[1], 10) >= 1 &&
+          parseInt(dateParts[1], 10) <= 12 &&
+          parseInt(dateParts[0], 10) >= 1 &&
+          parseInt(dateParts[0], 10) <= 31);
+      this.classList.toggle(
+        "input-invalid",
+        this.value.length > 0 && !isValidDate
+      );
+    });
+  }
+  if (searchHoraInput) {
+    searchHoraInput.addEventListener("input", function (e) {
+      let v = this.value.replace(/[^\d]/g, "");
+      if (v.length > 2) v = v.slice(0, 2) + ":" + v.slice(2);
+      this.value = v.slice(0, 5);
+      const timeParts = this.value.split(":");
+      const isValidTime =
+        this.value.length === 0 ||
+        (this.value.length === 5 &&
+          timeParts.length === 2 &&
+          parseInt(timeParts[0], 10) >= 0 &&
+          parseInt(timeParts[0], 10) <= 23 &&
+          parseInt(timeParts[1], 10) >= 0 &&
+          parseInt(timeParts[1], 10) <= 59);
+      this.classList.toggle(
+        "input-invalid",
+        this.value.length > 0 && !isValidTime
+      );
+    });
+  }
+  if (searchPISInput) {
+    searchPISInput.addEventListener("input", function (e) {
+      this.value = this.value.replace(/[^\d]/g, "");
+      this.classList.toggle(
+        "input-invalid",
+        this.value.length > 0 && !/^\d*$/.test(this.value)
+      );
+    });
+  }
+}
+
+// --- Event Listeners ---
 
 if (fileInput) {
   fileInput.addEventListener("change", function (e) {
@@ -442,16 +577,20 @@ if (fileInput) {
       toggleScrollButtonVisibility(false);
       if (fileSummarySection) fileSummarySection.style.display = "none";
       if (paginationControls) paginationControls.style.display = "none";
+      if (validationErrorsSection)
+        validationErrorsSection.style.display = "none";
       return;
     }
     if (fileNameDisplay) fileNameDisplay.textContent = file.name;
 
     if (removeButton) removeButton.disabled = true;
     if (clearButton) clearButton.disabled = true;
-
-    showAlert("Processando arquivo, por favor aguarde...", "info");
+    toggleLoadingOverlay(true);
+    if (validationErrorsSection) validationErrorsSection.style.display = "none";
 
     var reader = new FileReader();
+    loadingStartTime = Date.now();
+
     reader.onload = function (eventReader) {
       var contents = eventReader.target.result;
       var worker;
@@ -466,52 +605,81 @@ if (fileInput) {
         if (removeButton) removeButton.disabled = false;
         if (clearButton) clearButton.disabled = false;
         toggleScrollButtonVisibility(false);
+        toggleLoadingOverlay(false);
         return;
       }
 
       worker.onmessage = function (eventWorker) {
-        var existingAlert = document.querySelector(".alert-overlay");
-        if (existingAlert) document.body.removeChild(existingAlert);
+        const processingTime = Date.now() - loadingStartTime;
+        const minDisplayTime = 300;
 
-        if (eventWorker.data.error) {
-          showAlert(
-            "Erro ao analisar o arquivo AFD:\n" + eventWorker.data.error,
-            "error"
-          );
-          dataRows = [];
-        } else if (!eventWorker.data || eventWorker.data.length === 0) {
-          showAlert(
-            "Arquivo carregado está vazio ou não contém dados AFD reconhecíveis.",
-            "info"
-          );
-          dataRows = [];
+        const hideSpinnerAndProcess = () => {
+          toggleLoadingOverlay(false);
+          var result = eventWorker.data;
+
+          if (result.errors && result.errors.length > 0) {
+            displayValidationErrors(result.errors);
+          } else {
+            if (validationErrorsSection)
+              validationErrorsSection.style.display = "none";
+          }
+
+          if (!result.data || result.data.length === 0) {
+            if (!result.errors || result.errors.length === 0) {
+              showAlert(
+                "Arquivo carregado está vazio ou não contém dados AFD reconhecíveis.",
+                "info"
+              );
+            }
+            dataRows = [];
+          } else {
+            dataRows = result.data;
+            if (!result.errors || result.errors.length === 0) {
+              showAlert(
+                dataRows.length + " linhas processadas com sucesso!",
+                "success"
+              );
+            }
+          }
+
+          filteredAndSortedRows = [...dataRows];
+          originalRowCount = dataRows.length;
+          calculateAndDisplaySummary(dataRows);
+          currentPage = 1;
+          let currentRowsPerPageSetting = rowsPerPageSelect
+            ? rowsPerPageSelect.value
+            : rowsPerPage;
+          rowsPerPage =
+            currentRowsPerPageSetting === "all"
+              ? "all"
+              : parseInt(currentRowsPerPageSetting);
+
+          currentSortColumn = null;
+          currentSortDirection = "asc";
+          tableHeaders.forEach((th) => {
+            const sortableText = th.querySelector(".sortable-header-text");
+            if (sortableText) {
+              const indicator = sortableText.querySelector(".sort-indicator");
+              if (indicator) indicator.className = "sort-indicator";
+            }
+            th.classList.remove("searching-column");
+          });
+
+          displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+
+          if (removeButton) removeButton.disabled = dataRows.length === 0;
+          if (clearButton) clearButton.disabled = false;
+          clearSearchInputs();
+        };
+
+        if (processingTime < minDisplayTime) {
+          setTimeout(hideSpinnerAndProcess, minDisplayTime - processingTime);
         } else {
-          dataRows = eventWorker.data;
-          showAlert(
-            dataRows.length + " linhas processadas com sucesso!",
-            "success"
-          );
+          hideSpinnerAndProcess();
         }
-        filteredDataRows = [...dataRows];
-        originalRowCount = dataRows.length;
-        calculateAndDisplaySummary(dataRows);
-        currentPage = 1;
-        let currentRowsPerPageSetting = rowsPerPageSelect
-          ? rowsPerPageSelect.value
-          : rowsPerPage;
-        rowsPerPage =
-          currentRowsPerPageSetting === "all"
-            ? "all"
-            : parseInt(currentRowsPerPageSetting);
-        displayFileContents(filteredDataRows, currentPage, rowsPerPage);
-
-        if (removeButton) removeButton.disabled = dataRows.length === 0;
-        if (clearButton) clearButton.disabled = false;
-        clearSearchInputs();
       };
       worker.onerror = function (error) {
-        var existingAlert = document.querySelector(".alert-overlay");
-        if (existingAlert) document.body.removeChild(existingAlert);
+        toggleLoadingOverlay(false);
         console.error(
           "Erro no Web Worker:",
           error.message,
@@ -529,8 +697,7 @@ if (fileInput) {
       worker.postMessage(contents);
     };
     reader.onerror = function () {
-      var existingAlert = document.querySelector(".alert-overlay");
-      if (existingAlert) document.body.removeChild(existingAlert);
+      toggleLoadingOverlay(false);
       showAlert("Ocorreu um erro ao ler o arquivo selecionado.", "error");
       if (removeButton) removeButton.disabled = false;
       if (clearButton) clearButton.disabled = false;
@@ -547,50 +714,91 @@ if (removeButton) {
       fileNameDisplay.textContent = "Nenhum arquivo selecionado";
     removeButton.disabled = true;
     dataRows = [];
-    filteredDataRows = [];
+    filteredAndSortedRows = [];
     originalRowCount = 0;
     clearSearchInputs();
     displayFileContents([]);
     if (fileSummarySection) fileSummarySection.style.display = "none";
     if (paginationControls) paginationControls.style.display = "none";
+    if (validationErrorsSection) validationErrorsSection.style.display = "none";
   });
 }
 
-searchInputs = document.querySelectorAll(".search-input");
-searchButtons = document.querySelectorAll(".search-button");
+document.addEventListener("DOMContentLoaded", () => {
+  allSearchInputs = document.querySelectorAll(".search-input");
+  searchNSRInput = document.getElementById("searchNSR");
+  searchCodigoEventoInput = document.getElementById("searchCodigoEvento");
+  searchDataInput = document.getElementById("searchData");
+  searchHoraInput = document.getElementById("searchHora");
+  searchPISInput = document.getElementById("searchPIS");
+  setupInputValidation();
 
-searchInputs.forEach(function (input) {
-  if (!input) return;
-  var maxLength = parseInt(input.getAttribute("maxlength"));
-  input.addEventListener("input", function () {
-    if (input.value.length > maxLength) {
-      input.value = input.value.slice(0, maxLength);
-    }
-  });
-  input.addEventListener("keydown", function (event) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      var th = input.closest("th");
-      if (th) {
-        var columnIndex = Array.from(th.parentNode.children).indexOf(th);
-        searchTable(columnIndex, input.value);
+  searchButtons = document.querySelectorAll(".search-button");
+  searchButtons.forEach(function (button) {
+    if (!button) return;
+    button.addEventListener("click", function () {
+      var input = this.previousElementSibling;
+      if (input && input.classList.contains("search-input")) {
+        var th = input.closest("th");
+        if (th) {
+          var columnIndex = Array.from(th.parentNode.children).indexOf(th);
+          searchTable(columnIndex, input.value);
+        }
       }
-    }
+    });
   });
-});
 
-searchButtons.forEach(function (button) {
-  if (!button) return;
-  button.addEventListener("click", function () {
-    var input = button.previousElementSibling;
-    if (input && input.classList.contains("search-input")) {
-      var th = input.closest("th");
-      if (th) {
-        var columnIndex = Array.from(th.parentNode.children).indexOf(th);
-        searchTable(columnIndex, input.value);
+  allSearchInputs.forEach(function (input) {
+    if (!input) return;
+    input.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        var th = input.closest("th");
+        if (th) {
+          var columnIndex = Array.from(th.parentNode.children).indexOf(th);
+          searchTable(columnIndex, input.value);
+        }
       }
-    }
+    });
   });
+
+  var savedTheme = localStorage.getItem("theme");
+  // Aplica tema do sistema se nenhum tema salvo ou se é a primeira vez
+  if (
+    !savedTheme &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: light)").matches
+  ) {
+    document.body.classList.add("theme-light");
+    if (themeSwitcherButton) {
+      themeSwitcherButton.textContent = "☀️";
+      themeSwitcherButton.title = "Alternar para Tema Escuro";
+    }
+  } else if (savedTheme === "light") {
+    document.body.classList.add("theme-light");
+    if (themeSwitcherButton) {
+      themeSwitcherButton.textContent = "☀️";
+      themeSwitcherButton.title = "Alternar para Tema Escuro";
+    }
+  } else {
+    // Padrão para escuro se não houver preferência do sistema para claro ou se salvo como escuro
+    document.body.classList.remove("theme-light");
+    if (themeSwitcherButton) {
+      themeSwitcherButton.textContent = "🌙";
+      themeSwitcherButton.title = "Alternar para Tema Claro";
+    }
+  }
+
+  if (rowsPerPageSelect) {
+    let initialRowsPerPage = rowsPerPageSelect.value;
+    rowsPerPage =
+      initialRowsPerPage === "all" ? "all" : parseInt(initialRowsPerPage);
+  }
+  displayFileContents([]);
+  if (fileSummarySection) fileSummarySection.style.display = "none";
+  if (paginationControls) paginationControls.style.display = "none";
+  if (validationErrorsSection) validationErrorsSection.style.display = "none";
+  updateBodyHeight();
 });
 
 if (clearButton) {
@@ -604,7 +812,7 @@ if (themeSwitcherButton) {
   themeSwitcherButton.addEventListener("click", function () {
     document.body.classList.toggle("theme-light");
     var isLightTheme = document.body.classList.contains("theme-light");
-    localStorage.setItem("theme", isLightTheme ? "light" : "dark");
+    localStorage.setItem("theme", isLightTheme ? "light" : "dark"); // Salva a escolha manual
     themeSwitcherButton.textContent = isLightTheme ? "☀️" : "🌙";
     themeSwitcherButton.title = isLightTheme
       ? "Alternar para Tema Escuro"
@@ -621,7 +829,7 @@ if (scrollTopBottomButton) {
     }
   });
   window.addEventListener("scroll", function () {
-    if (filteredDataRows.length > 0 || dataRows.length > 0) {
+    if (filteredAndSortedRows.length > 0 || dataRows.length > 0) {
       if (
         window.innerHeight + window.scrollY + 150 >=
         document.body.scrollHeight
@@ -641,17 +849,17 @@ if (prevPageButton) {
   prevPageButton.addEventListener("click", () => {
     if (currentPage > 1) {
       currentPage--;
-      displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+      displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
     }
   });
 }
 if (nextPageButton) {
   nextPageButton.addEventListener("click", () => {
     if (rowsPerPage === "all") return;
-    var totalPages = Math.ceil(filteredDataRows.length / rowsPerPage);
+    var totalPages = Math.ceil(filteredAndSortedRows.length / rowsPerPage);
     if (currentPage < totalPages) {
       currentPage++;
-      displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+      displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
     }
   });
 }
@@ -664,35 +872,44 @@ if (rowsPerPageSelect) {
       rowsPerPage = parseInt(selectedValue);
     }
     currentPage = 1;
-    displayFileContents(filteredDataRows, currentPage, rowsPerPage);
+    displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
   });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  var savedTheme = localStorage.getItem("theme");
-  if (savedTheme === "light") {
-    document.body.classList.add("theme-light");
-    if (themeSwitcherButton) {
-      themeSwitcherButton.textContent = "☀️";
-      themeSwitcherButton.title = "Alternar para Tema Escuro";
-    }
-  } else {
-    document.body.classList.remove("theme-light");
-    if (themeSwitcherButton) {
-      themeSwitcherButton.textContent = "🌙";
-      themeSwitcherButton.title = "Alternar para Tema Claro";
-    }
+tableHeaders.forEach((th) => {
+  const sortableTextSpan = th.querySelector(".sortable-header-text");
+  if (sortableTextSpan && th.dataset.sortable === "true") {
+    sortableTextSpan.addEventListener("click", function () {
+      const columnKey = th.dataset.columnKey;
+      if (columnKey) {
+        sortData(columnKey, currentSortDirection);
+        displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+      }
+    });
   }
-  if (rowsPerPageSelect) {
-    let initialRowsPerPage = rowsPerPageSelect.value;
-    rowsPerPage =
-      initialRowsPerPage === "all" ? "all" : parseInt(initialRowsPerPage);
-  }
-  displayFileContents([]);
-  if (fileSummarySection) fileSummarySection.style.display = "none";
-  if (paginationControls) paginationControls.style.display = "none";
-  updateBodyHeight();
 });
+
+if (closeValidationErrorsButton) {
+  closeValidationErrorsButton.addEventListener("click", function () {
+    if (validationErrorsSection) {
+      validationErrorsSection.style.display = "none";
+    }
+  });
+}
+
+if (toggleSummaryButton && fileSummaryContent) {
+  toggleSummaryButton.addEventListener("click", function () {
+    fileSummaryContent.classList.toggle("collapsed");
+    if (fileSummaryContent.classList.contains("collapsed")) {
+      this.textContent = "➕"; // Expandir
+      this.title = "Expandir Resumo";
+    } else {
+      this.textContent = "➖"; // Minimizar
+      this.title = "Minimizar Resumo";
+    }
+    updateBodyHeight(); // Reajusta altura após colapsar/expandir
+  });
+}
 
 window.addEventListener("resize", function () {
   updateBodyHeight();

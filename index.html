@@ -23,13 +23,19 @@
 </head>
 
 <body>
+    <!-- Overlay de Carregamento -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processando arquivo...</p>
+    </div>
+
     <div class="container">
         <header class="app-header">
             <div class="header-title-wrapper">
                 <h1>Leitor AFD</h1>
                 <span class="design-by">Design by: <a href="http://johnaugust934.com.br" target="_blank"
                         rel="noopener noreferrer">João Augusto</a></span>
-                <span class="app-version">v2.1.4 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
+                <span class="app-version">v2.2.6 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
             </div>
             <button id="themeSwitcherButton" class="theme-switcher" title="Alternar Tema">🌙</button>
         </header>
@@ -53,62 +59,120 @@
             </div>
         </div>
 
+        <div id="validationErrorsSection" class="validation-errors-section" style="display: none;">
+            <div class="validation-errors-header">
+                <h3>⚠️ Erros de Validação Encontrados no Arquivo:</h3>
+                <button id="closeValidationErrorsButton" class="close-errors-button" title="Fechar Erros">✖</button>
+            </div>
+            <ul id="validationErrorsList"></ul>
+        </div>
+
         <div id="fileSummarySection" class="file-summary-section" style="display: none;">
-            <h2>Resumo do Arquivo AFD</h2>
+            <div class="file-summary-header"> <!-- Novo wrapper para título e botão -->
+                <h2>Resumo do Arquivo AFD</h2>
+                <button id="toggleSummaryButton" class="toggle-summary-button" title="Minimizar Resumo">➖</button>
+            </div>
             <div id="fileSummaryContent" class="file-summary-content">
                 <!-- O conteúdo do resumo será inserido aqui pelo JavaScript -->
             </div>
         </div>
 
-        <table id="fileTable">
-            <thead>
-                <tr>
-                    <th>LINHAS:</th>
-                    <th>
-                        NSR:
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar NSR" maxlength="9">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th>
-                        CÓDIGO DO EVENTO:
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar Código" maxlength="1">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th>
-                        DATA:
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar Data (dd/mm/aaaa)"
-                                maxlength="10">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th>
-                        HORA:
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar Hora (hh:mm)" maxlength="5">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th>
-                        PIS:
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar PIS" maxlength="12">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th>
-                        CRC:
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Os dados da tabela serão adicionados dinamicamente -->
-            </tbody>
-        </table>
+        <div class="table-container">
+            <table id="fileTable">
+                <thead>
+                    <tr>
+                        <th data-sortable="true" data-column-key="originalLineNumber">
+                            <span class="sortable-header-text">L#: <span class="sort-indicator"></span></span>
+                        </th>
+                        <th data-sortable="true" data-column-key="nsr">
+                            <span class="sortable-header-text">NSR: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" id="searchNSR" type="text" placeholder="Só números (9 dig.)"
+                                    maxlength="9" inputmode="numeric" pattern="\d*"
+                                    title="Apenas números, até 9 dígitos.">
+                                <button class="search-button" title="Pesquisar NSR">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="codigoEvento">
+                            <span class="sortable-header-text">CÓD. EVENTO: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" id="searchCodigoEvento" type="text" placeholder="0,2-6"
+                                    maxlength="1" inputmode="numeric" pattern="[023456]"
+                                    title="Apenas um dos seguintes números: 0, 2, 3, 4, 5, 6.">
+                                <button class="search-button" title="Pesquisar Código do Evento">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="data">
+                            <span class="sortable-header-text">DATA: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" id="searchData" type="text" placeholder="DD/MM/AAAA"
+                                    maxlength="10" title="Formato DD/MM/AAAA. Ex: 25/12/2023">
+                                <button class="search-button" title="Pesquisar Data">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="hora">
+                            <span class="sortable-header-text">HORA: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" id="searchHora" type="text" placeholder="HH:MM"
+                                    maxlength="5" title="Formato HH:MM. Ex: 14:30">
+                                <button class="search-button" title="Pesquisar Hora">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="pis">
+                            <span class="sortable-header-text">PIS: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" id="searchPIS" type="text"
+                                    placeholder="Só números (12 dig.)" maxlength="12" inputmode="numeric"
+                                    pattern="\d{12}" title="Apenas números, exatamente 12 dígitos.">
+                                <button class="search-button" title="Pesquisar PIS">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="false">
+                            CRC:
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Os dados da tabela serão adicionados dinamicamente -->
+                </tbody>
+            </table>
+        </div> <!-- Fim do .table-container -->
+
 
         <div id="paginationControls" class="pagination-controls" style="display: none;">
             <button id="prevPageButton" title="Página Anterior">Anterior</button>
@@ -119,7 +183,7 @@
                 <option value="50" selected>50</option>
                 <option value="100">100</option>
                 <option value="200">200</option>
-                <option value="all">Todos</option> <!-- NOVA OPÇÃO "TODOS" -->
+                <option value="all">Todos</option>
             </select>
             <span id="totalRowsInfo"></span>
         </div>
