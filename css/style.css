@@ -22,6 +22,9 @@
   --scrollbar-thumb-color: #444c56;
   --scrollbar-thumb-hover-color: #555e6a;
   --font-family-default: "Montserrat", sans-serif;
+  --table-header-bg: var(
+    --bg-color
+  ); /* Cor de fundo para o cabeçalho da tabela quando sticky */
 }
 
 /* Tema Claro */
@@ -44,6 +47,7 @@ body.theme-light {
   --scrollbar-track-color: #f0f0f0;
   --scrollbar-thumb-color: #bdc3c7;
   --scrollbar-thumb-hover-color: #95a5a6;
+  --table-header-bg: #e9ecef; /* Cor de fundo para o cabeçalho da tabela no tema claro */
 }
 
 /* PADRÕES */
@@ -119,12 +123,11 @@ div {
   align-items: center;
   z-index: 10001;
   color: white;
-  opacity: 0; /* Começa invisível */
+  opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 .loading-overlay.show {
-  /* Classe para mostrar */
   opacity: 1;
   visibility: visible;
 }
@@ -349,7 +352,7 @@ a#downloadButton:hover {
   border-radius: 8px;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: relative; /* Para posicionar o botão de fechar */
+  position: relative;
 }
 .validation-errors-header {
   display: flex;
@@ -360,17 +363,17 @@ a#downloadButton:hover {
 .validation-errors-section h3 {
   color: var(--danger-color);
   font-size: 1.1em;
-  margin: 0; /* Remove margem padrão do h3 */
+  margin: 0;
 }
 .close-errors-button {
   background: none;
   border: none;
   color: var(--secondary-text-color);
-  font-size: 1.5em; /* Tamanho do 'X' */
+  font-size: 1.5em;
   line-height: 1;
   padding: 0 5px;
   cursor: pointer;
-  margin-top: 0; /* Reseta margem do botão geral */
+  margin-top: 0;
 }
 .close-errors-button:hover {
   color: var(--primary-text-color);
@@ -460,19 +463,20 @@ a#downloadButton:hover {
 
 #fileTable th,
 #fileTable td {
-  padding: 10px 8px;
+  padding: 10px 8px; /* Ajustado padding */
   text-align: left;
   border-bottom: 1px solid var(--border-color);
   white-space: normal;
   word-break: break-word;
   font-size: 0.85em;
   font-family: var(--font-family-default);
+  vertical-align: middle; /* Alinha o conteúdo do th e td verticalmente ao meio */
 }
 
 /* Ajustando larguras das colunas */
 #fileTable th:nth-child(1),
 #fileTable td:nth-child(1) {
-  width: 5%;
+  width: 6%;
 } /* Linhas */
 #fileTable th:nth-child(2),
 #fileTable td:nth-child(2) {
@@ -480,7 +484,7 @@ a#downloadButton:hover {
 } /* NSR */
 #fileTable th:nth-child(3),
 #fileTable td:nth-child(3) {
-  width: 15%;
+  width: 18%;
 } /* Código Evento - Aumentado */
 #fileTable th:nth-child(4),
 #fileTable td:nth-child(4) {
@@ -488,43 +492,72 @@ a#downloadButton:hover {
 } /* Data */
 #fileTable th:nth-child(5),
 #fileTable td:nth-child(5) {
-  width: 12%;
+  width: 10%;
 } /* Hora */
 #fileTable th:nth-child(6),
 #fileTable td:nth-child(6) {
-  width: 24%;
+  width: 22%;
 } /* PIS */
 #fileTable th:nth-child(7),
 #fileTable td:nth-child(7) {
   width: 10%;
 } /* CRC */
 
+#fileTable thead tr {
+  /* Para garantir que o fundo do cabeçalho cubra a área */
+  background-color: var(--table-header-bg); /* Usa a variável de cor do tema */
+}
+
 #fileTable th {
-  background-color: var(--bg-color);
+  background-color: inherit; /* Herda do thead tr */
   color: var(--primary-text-color);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--accent-color);
   position: sticky;
-  top: 0;
-  z-index: 10;
-  cursor: pointer;
+  top: 0; /* Necessário para sticky */
+  z-index: 10; /* Para ficar acima do conteúdo da tabela ao rolar */
 }
+
+.sortable-header-text {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center; /* Alinha verticalmente o texto e o indicador */
+  padding: 2px 0;
+  transition: color 0.2s ease;
+  font-weight: 600;
+}
+.sortable-header-text:hover {
+  color: var(--accent-color);
+}
+
+#fileTable th[data-sortable="false"] .sortable-header-text,
 #fileTable th[data-sortable="false"] {
   cursor: default;
 }
+#fileTable th[data-sortable="false"] .sortable-header-text:hover {
+  color: inherit;
+}
+
+#fileTable th.searching-column .sortable-header-text,
 #fileTable th.searching-column {
-  background-color: var(--accent-color) !important;
   color: white !important;
 }
+#fileTable th.searching-column {
+  background-color: var(
+    --accent-color
+  ) !important; /* Garante que o fundo do TH mude */
+}
+
 #fileTable th .sort-indicator {
   display: inline-block;
-  margin-left: 5px;
+  margin-left: 6px;
   font-size: 0.8em;
   opacity: 0.6;
   width: 1em;
   text-align: center;
+  line-height: 1;
 }
 #fileTable th .sort-indicator.asc::after {
   content: "▲";
@@ -536,23 +569,24 @@ a#downloadButton:hover {
 }
 
 #fileTable th div {
+  /* Wrapper para input e botão de busca */
   display: flex;
-  align-items: center;
+  align-items: center; /* Alinha input e botão de lupa verticalmente */
   margin-top: 8px;
-  gap: 8px;
+  gap: 5px;
 }
 
 #fileTable input[type="text"].search-input {
   flex-grow: 1;
-  padding: 8px 10px;
+  padding: 7px 8px;
   border: 1px solid var(--border-color);
-  background-color: var(--bg-color);
+  background-color: var(--bg-color); /* Para contraste com o fundo do th */
   color: var(--primary-text-color);
   border-radius: 4px;
-  font-size: 0.9em;
-  height: 38px;
+  font-size: 0.85em;
+  height: 34px;
   line-height: normal;
-  min-width: 60px; /* Reduzido para colunas menores */
+  min-width: 50px;
 }
 #fileTable input[type="text"].search-input::placeholder {
   color: var(--secondary-text-color);
@@ -565,16 +599,26 @@ a#downloadButton:hover {
 }
 
 #fileTable button.search-button {
-  padding: 8px 10px;
+  padding: 0;
   background-color: var(--accent-color);
   flex-shrink: 0;
   margin-top: 0;
-  font-size: 0.85em;
-  height: 38px;
-  min-width: fit-content;
+  height: 34px;
+  width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px solid var(--accent-color);
+}
+#fileTable button.search-button svg {
+  width: 16px;
+  height: 16px;
+  stroke: white;
 }
 #fileTable button.search-button:hover {
   background-color: var(--accent-hover-color);
+  border-color: var(--accent-hover-color);
 }
 
 #fileTable tr:last-child td {

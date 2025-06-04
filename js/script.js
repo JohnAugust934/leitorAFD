@@ -15,7 +15,7 @@ var validationErrorsSection = document.getElementById(
 var validationErrorsList = document.getElementById("validationErrorsList");
 var closeValidationErrorsButton = document.getElementById(
   "closeValidationErrorsButton"
-); // Novo
+);
 var tableHeaders = document.querySelectorAll(
   '#fileTable th[data-sortable="true"]'
 );
@@ -38,7 +38,7 @@ var rowsPerPage = 50;
 
 var currentSortColumn = null;
 var currentSortDirection = "asc";
-let loadingTimeoutId = null; // Para controlar o tempo mínimo do spinner
+let loadingTimeoutId = null;
 
 /**
  * Valida um número de PIS/PASEP/NIS.
@@ -72,23 +72,12 @@ function updateBodyHeight() {
   }
 }
 
-/**
- * Mostra ou esconde o overlay de carregamento, garantindo um tempo mínimo de exibição.
- * @param {boolean} show - True para mostrar, false para esconder.
- */
 function toggleLoadingOverlay(show) {
   if (loadingOverlay) {
     if (show) {
-      loadingOverlay.classList.add("show"); // Usa classe para transição CSS
-      // Define um timeout para esconder o spinner, caso o processamento seja muito rápido
-      if (loadingTimeoutId) clearTimeout(loadingTimeoutId); // Limpa timeout anterior
-      loadingTimeoutId = setTimeout(() => {
-        // Só esconde se ainda estiver programado para esconder (ou seja, se show ainda for true implicitamente)
-        // A lógica de esconder de fato virá após o processamento do worker.
-        // Este timeout é mais para garantir que ele APAREÇA.
-      }, 500); // Garante pelo menos 500ms de exibição
-    } else {
+      loadingOverlay.classList.add("show");
       if (loadingTimeoutId) clearTimeout(loadingTimeoutId);
+    } else {
       loadingOverlay.classList.remove("show");
     }
   }
@@ -100,22 +89,21 @@ function displayValidationErrors(errors) {
     validationErrorsList.innerHTML = "";
     errors.forEach((err) => {
       const li = document.createElement("li");
-      li.innerHTML = `Linha ${err.lineNumber}: Campo "<strong>${
+      li.innerHTML = `Linha ${err.lineNumber}: Campo "<strong>${escapeHtml(
         err.field
-      }</strong>" (valor: <code>${escapeHtml(
+      )}</strong>" (valor: <code>${escapeHtml(
         String(err.value)
       )}</code>) - ${escapeHtml(err.error)}`;
       validationErrorsList.appendChild(li);
     });
     validationErrorsSection.style.display = "block";
-    // Não mostra alerta aqui, pois a seção de erros já é o feedback principal
   } else {
     validationErrorsSection.style.display = "none";
   }
 }
 
 function escapeHtml(unsafe) {
-  if (typeof unsafe !== "string") return unsafe;
+  if (typeof unsafe !== "string") return String(unsafe);
   return unsafe
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -510,11 +498,14 @@ function sortData(columnKey, direction, toggleDirection = true) {
   currentSortColumn = columnKey;
 
   tableHeaders.forEach((th) => {
-    const indicator = th.querySelector(".sort-indicator");
-    if (indicator) {
-      indicator.className = "sort-indicator";
-      if (th.dataset.columnKey === columnKey) {
-        indicator.classList.add(currentSortDirection);
+    const sortableText = th.querySelector(".sortable-header-text");
+    if (sortableText) {
+      const indicator = sortableText.querySelector(".sort-indicator");
+      if (indicator) {
+        indicator.className = "sort-indicator";
+        if (th.dataset.columnKey === columnKey) {
+          indicator.classList.add(currentSortDirection);
+        }
       }
     }
   });
@@ -574,6 +565,8 @@ if (fileInput) {
     if (validationErrorsSection) validationErrorsSection.style.display = "none";
 
     var reader = new FileReader();
+    const processingStartTime = Date.now();
+
     reader.onload = function (eventReader) {
       var contents = eventReader.target.result;
       var worker;
@@ -592,13 +585,11 @@ if (fileInput) {
         return;
       }
 
-      const processingStartTime = Date.now(); // Marca o início do processamento
-
       worker.onmessage = function (eventWorker) {
         const processingTime = Date.now() - processingStartTime;
-        const minDisplayTime = 500; // Tempo mínimo para exibir o spinner em ms
+        const minDisplayTime = 300;
 
-        const hideSpinner = () => {
+        const hideSpinnerAndProcess = () => {
           toggleLoadingOverlay(false);
           var result = eventWorker.data;
 
@@ -611,6 +602,7 @@ if (fileInput) {
 
           if (!result.data || result.data.length === 0) {
             if (!result.errors || result.errors.length === 0) {
+              // Só mostra se não houver erros de validação já mostrados
               showAlert(
                 "Arquivo carregado está vazio ou não contém dados AFD reconhecíveis.",
                 "info"
@@ -642,8 +634,11 @@ if (fileInput) {
           currentSortColumn = null;
           currentSortDirection = "asc";
           tableHeaders.forEach((th) => {
-            const indicator = th.querySelector(".sort-indicator");
-            if (indicator) indicator.className = "sort-indicator";
+            const sortableText = th.querySelector(".sortable-header-text");
+            if (sortableText) {
+              const indicator = sortableText.querySelector(".sort-indicator");
+              if (indicator) indicator.className = "sort-indicator";
+            }
             th.classList.remove("searching-column");
           });
 
@@ -655,9 +650,9 @@ if (fileInput) {
         };
 
         if (processingTime < minDisplayTime) {
-          setTimeout(hideSpinner, minDisplayTime - processingTime);
+          setTimeout(hideSpinnerAndProcess, minDisplayTime - processingTime);
         } else {
-          hideSpinner();
+          hideSpinnerAndProcess();
         }
       };
       worker.onerror = function (error) {
@@ -818,17 +813,20 @@ if (rowsPerPageSelect) {
   });
 }
 
+// Event listeners para ordenação da tabela
 tableHeaders.forEach((th) => {
-  th.addEventListener("click", function () {
-    const columnKey = this.dataset.columnKey;
-    if (columnKey && this.dataset.sortable === "true") {
-      sortData(columnKey, currentSortDirection);
-      displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
-    }
-  });
+  const sortableTextSpan = th.querySelector(".sortable-header-text");
+  if (sortableTextSpan && th.dataset.sortable === "true") {
+    sortableTextSpan.addEventListener("click", function () {
+      const columnKey = th.dataset.columnKey;
+      if (columnKey) {
+        sortData(columnKey, currentSortDirection);
+        displayFileContents(filteredAndSortedRows, currentPage, rowsPerPage);
+      }
+    });
+  }
 });
 
-// Event listener para fechar a seção de erros de validação
 if (closeValidationErrorsButton) {
   closeValidationErrorsButton.addEventListener("click", function () {
     if (validationErrorsSection) {

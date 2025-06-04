@@ -35,7 +35,7 @@
                 <h1>Leitor AFD</h1>
                 <span class="design-by">Design by: <a href="http://johnaugust934.com.br" target="_blank"
                         rel="noopener noreferrer">João Augusto</a></span>
-                <span class="app-version">v2.2.1 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
+                <span class="app-version">v2.2.4 - PWA Edition</span> <!-- VERSÃO ATUALIZADA -->
             </div>
             <button id="themeSwitcherButton" class="theme-switcher" title="Alternar Tema">🌙</button>
         </header>
@@ -59,7 +59,6 @@
             </div>
         </div>
 
-        <!-- Seção de Erros de Validação do Arquivo -->
         <div id="validationErrorsSection" class="validation-errors-section" style="display: none;">
             <div class="validation-errors-header">
                 <h3>⚠️ Erros de Validação Encontrados no Arquivo:</h3>
@@ -75,56 +74,96 @@
             </div>
         </div>
 
-        <table id="fileTable">
-            <thead>
-                <tr>
-                    <th data-sortable="true" data-column-key="originalLineNumber">LINHAS: <span
-                            class="sort-indicator"></span></th>
-                    <th data-sortable="true" data-column-key="nsr">
-                        NSR: <span class="sort-indicator"></span>
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar NSR" maxlength="9">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th data-sortable="true" data-column-key="codigoEvento">
-                        CÓDIGO EVENTO: <span class="sort-indicator"></span> <!-- Texto ajustado para caber melhor -->
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar Código" maxlength="1">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th data-sortable="true" data-column-key="data">
-                        DATA: <span class="sort-indicator"></span>
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar Data (dd/mm/aaaa)"
-                                maxlength="10">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th data-sortable="true" data-column-key="hora">
-                        HORA: <span class="sort-indicator"></span>
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar Hora (hh:mm)" maxlength="5">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th data-sortable="true" data-column-key="pis">
-                        PIS: <span class="sort-indicator"></span>
-                        <div>
-                            <input class="search-input" type="text" placeholder="Buscar PIS" maxlength="12">
-                            <button class="search-button">Pesquisar</button>
-                        </div>
-                    </th>
-                    <th data-sortable="false">
-                        CRC:
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Os dados da tabela serão adicionados dinamicamente -->
-            </tbody>
-        </table>
+        <div class="table-container"> <!-- Wrapper para a tabela para controlar o sticky header -->
+            <table id="fileTable">
+                <thead>
+                    <tr>
+                        <th data-sortable="true" data-column-key="originalLineNumber">
+                            <span class="sortable-header-text">L#: <span class="sort-indicator"></span></span>
+                            <!-- "LINHAS:" abreviado para "L#" -->
+                        </th>
+                        <th data-sortable="true" data-column-key="nsr">
+                            <span class="sortable-header-text">NSR: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" type="text" placeholder="Buscar NSR" maxlength="9">
+                                <button class="search-button" title="Pesquisar NSR">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="codigoEvento">
+                            <span class="sortable-header-text">CÓD. EVENTO: <span class="sort-indicator"></span></span>
+                            <!-- Abreviação -->
+                            <div>
+                                <input class="search-input" type="text" placeholder="Buscar Código" maxlength="1">
+                                <button class="search-button" title="Pesquisar Código do Evento">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="data">
+                            <span class="sortable-header-text">DATA: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" type="text" placeholder="Buscar Data" maxlength="10">
+                                <button class="search-button" title="Pesquisar Data">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="hora">
+                            <span class="sortable-header-text">HORA: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" type="text" placeholder="Buscar Hora" maxlength="5">
+                                <button class="search-button" title="Pesquisar Hora">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="true" data-column-key="pis">
+                            <span class="sortable-header-text">PIS: <span class="sort-indicator"></span></span>
+                            <div>
+                                <input class="search-input" type="text" placeholder="Buscar PIS" maxlength="12">
+                                <button class="search-button" title="Pesquisar PIS">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                        </th>
+                        <th data-sortable="false">
+                            CRC:
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Os dados da tabela serão adicionados dinamicamente -->
+                </tbody>
+            </table>
+        </div> <!-- Fim do .table-container -->
+
 
         <div id="paginationControls" class="pagination-controls" style="display: none;">
             <button id="prevPageButton" title="Página Anterior">Anterior</button>
