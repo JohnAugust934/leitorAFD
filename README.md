@@ -1,7 +1,7 @@
 #  leitorAFD - PWA
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.2.6-blue?style=for-the-badge" alt="Versão do Projeto">
+  <img src="https://img.shields.io/badge/version-2.2.8-blue?style=for-the-badge" alt="Versão do Projeto">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="Licença MIT">
 </p>
 
